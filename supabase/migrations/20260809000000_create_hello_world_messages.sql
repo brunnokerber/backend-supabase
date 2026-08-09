@@ -6,7 +6,7 @@ create table if not exists public.hello_world_messages (
 
 alter table public.hello_world_messages enable row level security;
 
-grant select on table public.hello_world_messages to authenticated;
+grant select,insert, update, delete on table public.hello_world_messages to authenticated;
 
 drop policy if exists "Authenticated users can read hello world messages" on public.hello_world_messages;
 
@@ -15,3 +15,25 @@ create policy "Authenticated users can read hello world messages"
   for select
   to authenticated
   using (true);
+
+drop policy if exists "Admins can insert hello world messages" on public.hello_world_messages;
+create policy "Admins can insert hello world messages"
+  on public.hello_world_messages
+  for insert
+  to authenticated
+  with check (public.current_user_role() = 'admin');
+
+drop policy if exists "Admins can update hello world messages" on public.hello_world_messages;
+create policy "Admins can update hello world messages"
+  on public.hello_world_messages
+  for update
+  to authenticated
+  using (public.current_user_role() = 'admin')
+  with check (public.current_user_role() = 'admin');
+
+drop policy if exists "Admins can delete hello world messages" on public.hello_world_messages;
+create policy "Admins can delete hello world messages"
+  on public.hello_world_messages
+  for delete
+  to authenticated
+  using (public.current_user_role() = 'admin');

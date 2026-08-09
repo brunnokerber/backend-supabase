@@ -47,6 +47,7 @@ execute function public.handle_new_user();
 alter table public.profiles enable row level security;
 
 grant select on table public.profiles to authenticated;
+grant select, update on table public.profiles to service_role;
 
 create or replace function public.current_user_role()
 returns public.app_role
