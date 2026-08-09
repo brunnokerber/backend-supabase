@@ -1,0 +1,35 @@
+name: Deploy Supabase to production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-database:
+    name: Deploy database migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase@latest
+
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Push migrations to Supabase cloud
+        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
+
+      # If you add Edge Functions later, deploy them from main here.
+      # Example:
+      # - run: supabase functions deploy <function-name> --project-ref "$SUPABASE_PROJECT_REF"
