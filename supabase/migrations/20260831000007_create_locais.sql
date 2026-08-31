@@ -1,5 +1,6 @@
 create table if not exists locais(
   id bigint generated always as identity primary key,
+  tipo_local varchar(30) not null,
   contato varchar(50) not null,
   telefone varchar(11) not null,
   local varchar(50) not null,
