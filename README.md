@@ -1,95 +1,91 @@
-# Backend Supabase
+# Backend Supabase - Gestão de Resgate, Acolhimento e Doações
 
-Projeto mínimo de backend com Supabase para testar consulta direta em tabela com RLS e autenticação.
+Backend desenvolvido em **Supabase (PostgreSQL)** para o sistema de gestão de resgate de animais, controle de saúde/veterinário, lares temporários e direcionamento de doações.
 
-## O que foi criado
+---
 
-- `supabase/config.toml`: configuração base do projeto local.
-- `supabase/migrations/20260809000000_create_hello_world_messages.sql`: tabela `hello_world_messages` com RLS.
-- `supabase/migrations/20260809000001_create_profiles_and_roles.sql`: perfis de usuário e roles `user`/`admin`.
-- `supabase/seed.sql`: insere a linha inicial de hello world.
+## Estrutura do Banco de Dados (Schema)
 
-## Como rodar localmente
+O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e conta com Row Level Security (RLS) habilitado em todas as tabelas:
 
-1. Inicie a stack do Supabase:
+1. **`profiles`** (`20260809000000_create_profiles_and_roles.sql`):
+   - Perfis de usuários vinculados ao `auth.users` via trigger automático, com controle de papéis (`app_role`: `'user'`, `'admin'`).
+2. **`handle_updated_at`** (`20260831000001_create_update_at_function.sql`):
+   - Função utilitária global para atualização automática do campo `updated_at` via triggers.
+3. **`pets`** (`20260831000002_create_pets.sql`):
+   - Cadastro dos animais resgatados (status, nome, datas, porte, pelagem, chip, rga, etc.).
+4. **`entradas`** (`20260831000003_create_entradas.sql`):
+   - Registro de entrada do pet na organização/abrigo, vinculado ao usuário responsável (`auth.users`) e ao animal.
+5. **`veterinarios`** (`20260831000004_create_veterinarios.sql`):
+   - Cadastro de médicos veterinários e clínicas parceiras (nome, telefone, CRMV).
+6. **`vacinas`** (`20260831000005_create_vacinas.sql`):
+   - Controle do calendário vacinal dos pets (prevista, aplicação, veterinário responsável).
+7. **`consultas_exames`** (`20260831000006_create_consultas_exames.sql`):
+   - Histórico clínico do pet (consultas, procedimentos cirúrgicos, exames, medicamentos, custos).
+8. **`locais`** (`20260831000007_create_locais.sql`):
+   - Cadastro de lares temporários, abrigos e pontos de apoio (endereço, contato, responsável).
+9. **`doacoes`** (`20260831000008_create_doacoes.sql`):
+   - Registro de doações recebidas (ração, medicamentos, insumos, volume e unidade de medida).
+10. **`direcionamento_doacoes`** (`20260831000009_create_direcionamento_doacoes.sql`):
+    - Controle de distribuição de doações para os locais/lares temporários.
+11. **`pets_locais`** (`20260831000010_create_pets_locais.sql`):
+    - Histórico de hospedagem e permanência dos pets nos locais/lares temporários com controle de auxílio financeiro.
 
+---
+
+## Como Rodar Localmente
+
+### Pré-requisitos
+- [Docker Desktop](https://www.docker.com/) instalado e em execução.
+- [Supabase CLI](https://supabase.com/docs/guides/cli) instalado.
+
+### 1. Iniciar a stack local do Supabase
 ```bash
 supabase start
 ```
 
-2. Aplique a migração e o seed no banco local:
-
+### 2. Aplicar todas as migrations no banco local
 ```bash
 supabase db reset
 ```
 
-## Fluxo de autenticação
+---
 
-1. Um admin cria o usuário pelo Studio ou pela Admin API do Supabase.
-2. Um registro em `public.profiles` será criado automaticamente para esse usuário com role `user`.
-3. O usuário faz login e copia o `access_token` retornado.
-4. Use esse token para consultar a tabela via REST API.
+## Autenticação e Controle de Acesso (RLS)
 
-## Roles
+- **Criação de Usuários:** Ao criar um usuário no Supabase Auth, uma linha correspondente é inserida automaticamente na tabela `public.profiles` com papel `user`.
+- **Roles:**
+  - `user`: Usuário autenticado padrão.
+  - `admin`: Usuário com privilégios administrativos. Pode ser promovido alterando a coluna `role` em `public.profiles`.
+- **Row Level Security (RLS):** Ativo em todas as tabelas, garantindo que apenas requisições autenticadas possam consultar ou manipular dados.
 
-- `user`: papel padrão de qualquer usuário autenticado.
-- `admin`: papel para contas administrativas do app.
+---
 
-Você pode promover um usuário para `admin` atualizando a coluna `role` em `public.profiles` via Studio ou SQL.
+## Consumo da API REST
 
-## Exemplo de consulta no Insomnia
+Após rodar `supabase start`, os endpoints REST estarão disponíveis em `http://127.0.0.1:54321/rest/v1/`.
 
-Endpoint:
-
+### Headers obrigatórios nas requisições:
 ```text
-http://127.0.0.1:54321/rest/v1/hello_world_messages?select=*
+apikey: <SUA_ANON_KEY>
+Authorization: Bearer <ACCESS_TOKEN_DO_USUARIO>
 ```
 
-Headers:
+### Exemplos de Endpoints:
+- `GET /rest/v1/pets?select=*`
+- `GET /rest/v1/pets?select=*,entradas(*),vacinas(*),consultas_exames(*)`
+- `GET /rest/v1/locais?select=*,pets_locais(*,pets(*))`
+- `GET /rest/v1/doacoes?select=*,direcionamento_doacoes(*,locais(*))`
 
-- `apikey: <SUA_ANON_KEY>`
-- `Authorization: Bearer <ACCESS_TOKEN_DO_USUARIO>`
+---
 
-Exemplo de resposta:
+## Integração Contínua (CI/CD)
 
-```json
-{
-  "id": 1,
-  "message": "Hello, world from Supabase SQL!",
-  "created_at": "2026-08-09T00:00:00Z"
-}
-```
+- **`pull_request -> main`:** Valida as migrations localmente executando `supabase start` e `supabase db reset`.
+- **`push -> main`:** Aplica as novas migrations no projeto Supabase em produção via `supabase db push --linked`.
 
-Se quiser testar o login via `curl`, o endpoint é:
-
-```bash
-curl -i -X POST "http://127.0.0.1:54321/auth/v1/token?grant_type=password" \
-  -H "apikey: <SUA_ANON_KEY>" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"teste@exemplo.com\",\"password\":\"12345678\"}"
-```
-
-Depois, use o `access_token` retornado no header `Authorization` da consulta REST.
-
-## Consultar perfil
-
-Endpoint:
-
-```text
-http://127.0.0.1:54321/rest/v1/profiles?select=*
-```
-
-Com RLS ativo, um usuário autenticado só enxerga o próprio perfil. Um admin enxerga todos os perfis.
-
-## CI/CD
-
-- `pull_request -> main`: roda a validação local com `supabase start` e `supabase db reset`.
-- `push -> main`: aplica as migrations no Supabase cloud com `supabase db push --linked`.
-
-Secrets necessários no GitHub:
-
+### Secrets configurados no GitHub Actions:
 - `SUPABASE_ACCESS_TOKEN`
 - `SUPABASE_PROJECT_REF`
 - `SUPABASE_DB_PASSWORD`
 
-Se você adicionar Edge Functions no futuro, o deploy delas pode entrar no mesmo fluxo da `main`.

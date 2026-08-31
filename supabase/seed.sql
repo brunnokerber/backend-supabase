@@ -1,4 +1,2 @@
-insert into public.hello_world_messages (id, message)
-values (1, 'Hello, world from Supabase SQL!')
-on conflict (id) do update
-set message = excluded.message;
+-- Seed data for local development
+-- Adicione dados iniciais de teste aqui se desejar (ex: locais, veterinarios, etc.)
