@@ -4,7 +4,7 @@ create table if not exists consultas_exames(
   id_veterinario bigint references public.veterinarios(id) on delete set null,
   operacao_medicamento varchar(300) not null,
   data_realizacao date not null,
-  custo decimal(10,2),
+  custo numeric(10,2),
   tipo_operacao varchar(30) not null,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())

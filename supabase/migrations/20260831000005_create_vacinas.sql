@@ -5,6 +5,7 @@ create table if not exists vacinas(
   nome_vacina varchar(30) not null,
   data_prevista date not null,
   data_aplicacao date,
+  custo numeric(10,2),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
