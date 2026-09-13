@@ -4,7 +4,7 @@ create table if not exists entradas(
   id_pet bigint not null references public.pets(id) on delete cascade,
   local_origem varchar(50) not null,
   data_entrada date not null,
-  resgate varchar(50) not null,
+  resgatante varchar(50) not null,
   observacoes text,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
