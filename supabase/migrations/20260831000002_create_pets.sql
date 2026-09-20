@@ -4,7 +4,7 @@ create table if not exists public.pets (
   sexo varchar(30) not null,
   status varchar(30) not null,
   nome varchar(30) not null,
-  senerioridade varchar(30) not null,
+  senioridade varchar(30) not null,
   data_nascimento date,
   data_castracao date,
   link_documentos text,
