@@ -81,6 +81,11 @@ jobs:
             .replaceAll("{{APP_NAME}}", appName)
             .replaceAll("{{APP_DESCRIPTION}}", appDesc);
 
+          let resetPasswordHtml = fs.readFileSync("supabase/templates/reset-password.html", "utf8");
+          resetPasswordHtml = resetPasswordHtml
+            .replaceAll("{{APP_NAME}}", appName)
+            .replaceAll("{{APP_DESCRIPTION}}", appDesc);
+
           async function patchConfig(body) {
             const res = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
               method: "PATCH",
@@ -98,20 +103,23 @@ jobs:
           async function run() {
             console.log("🔄 Sincronizando Auth e Templates com Supabase...");
             
-            // 1. Tenta sincronizar URLs + Templates de E-mail
+            // 1. Tenta sincronizar URLs + Templates de E-mail (Convite e Reset de Senha)
             const fullPayload = {
               site_url: siteUrl,
               uri_allow_list: `${siteUrl}/**,http://localhost:4200/**,http://127.0.0.1:4200/**`,
               mailer_subjects_invite: `Convite de Acesso - ${appName}`,
-              mailer_templates_invite_content: inviteHtml
+              mailer_templates_invite_content: inviteHtml,
+              mailer_subjects_recovery: `Redefinição de Senha - ${appName}`,
+              mailer_templates_recovery_content: resetPasswordHtml
             };
 
             const res = await patchConfig(fullPayload);
 
             if (res.status >= 200 && res.status < 300) {
-              console.log("✅ URLs e Template de E-mail sincronizados com sucesso!");
+              console.log("✅ URLs e Templates de E-mail (Convite & Reset) sincronizados com sucesso!");
               return;
             }
+
 
             // 2. Se for a limitação do Free Tier sem Custom SMTP
             if (res.body.includes("Email template modification is not available for free tier")) {

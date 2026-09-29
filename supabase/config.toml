@@ -252,6 +252,11 @@ otp_expiry = 86400 # 24 horas
 subject = "Convite para acesso ao sistema"
 content_path = "./supabase/templates/invite.html"
 
+[auth.email.template.recovery]
+subject = "Redefinição de Senha de Acesso"
+content_path = "./supabase/templates/reset-password.html"
+
+
 
 
 # Uncomment to customize notification email template
