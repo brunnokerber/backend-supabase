@@ -6,20 +6,22 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  SITE_URL: ${{ vars.SITE_URL || 'https://peludinhosdovale.vercel.app' }}
+  APP_NAME: ${{ vars.APP_NAME || 'Peludinhos do Vale' }}
+  APP_DESCRIPTION: ${{ vars.APP_DESCRIPTION || 'Sistema de Gestão Animal & Resgates' }}
+
 jobs:
+  # ==========================================
+  # ETAPA 1: Migrações do Banco de Dados
+  # ==========================================
   deploy-database:
-    name: Deploy database migrations
+    name: 1. Deploy Database Migrations
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SITE_URL: ${{ vars.SITE_URL || 'https://peludinhosdovale.vercel.app' }}
-      APP_NAME: ${{ vars.APP_NAME || 'Peludinhos do Vale' }}
-      APP_DESCRIPTION: ${{ vars.APP_DESCRIPTION || 'Sistema de Gestão Animal & Resgates' }}
-
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,10 +35,37 @@ jobs:
       - name: Push migrations to Supabase cloud
         run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
 
+  # ==========================================
+  # ETAPA 2: Deploy das Edge Functions
+  # ==========================================
+  deploy-functions:
+    name: 2. Deploy Edge Functions
+    needs: deploy-database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase@latest
+
       - name: Deploy Edge Functions
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
 
-      - name: Sync Auth Config & Email Templates to Supabase Cloud
+  # ==========================================
+  # ETAPA 3: Sincronização de Auth & E-mail
+  # ==========================================
+  sync-auth-and-templates:
+    name: 3. Sync Auth & Email Templates
+    needs: deploy-database
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sincronizar via Supabase Management API
         run: |
           node -e '
           const fs = require("fs");
