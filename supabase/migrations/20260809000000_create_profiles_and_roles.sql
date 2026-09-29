@@ -42,13 +42,22 @@ security definer
 stable
 set search_path = public
 as $$
-  select exists (
-    select 1
-    from public.profiles
-    where id = auth.uid()
-      and role = 'admin'
-      and ativo = true
-  );
+  select
+    -- Execuções diretas no banco (SQL Editor do Dashboard, migrations, psql)
+    current_user in ('postgres', 'supabase_admin', 'service_role')
+    -- Requisições autenticadas com service_role key (Edge Functions / Backend)
+    or (auth.role() = 'service_role')
+    -- Usuário autenticado na aplicação com perfil admin ativo
+    or (
+      auth.uid() is not null
+      and exists (
+        select 1
+        from public.profiles
+        where id = auth.uid()
+          and role = 'admin'
+          and ativo = true
+      )
+    );
 $$;
 
 -- 5. Trigger que sincroniza o perfil quando um novo usuário é cadastrado/convidado
