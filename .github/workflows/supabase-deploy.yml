@@ -30,6 +30,9 @@ jobs:
       - name: Push migrations to Supabase cloud
         run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
 
+      - name: Deploy Edge Functions
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+
       # If you add Edge Functions later, deploy them from main here.
       # Example:
       # - run: supabase functions deploy <function-name> --project-ref "$SUPABASE_PROJECT_REF"
