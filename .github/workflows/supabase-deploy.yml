@@ -69,7 +69,6 @@ jobs:
         run: |
           node -e '
           const fs = require("fs");
-          const https = require("https");
 
           const projectRef = process.env.SUPABASE_PROJECT_REF;
           const token = process.env.SUPABASE_ACCESS_TOKEN;
@@ -82,32 +81,23 @@ jobs:
             .replaceAll("{{APP_NAME}}", appName)
             .replaceAll("{{APP_DESCRIPTION}}", appDesc);
 
-          function patchConfig(body) {
-            return new Promise((resolve, reject) => {
-              const payload = JSON.stringify(body);
-              const req = https.request({
-                hostname: "api.supabase.com",
-                path: `/v1/projects/${projectRef}/config/auth`,
-                method: "PATCH",
-                headers: {
-                  "Authorization": `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                  "Content-Length": Buffer.byteLength(payload)
-                }
-              }, (res) => {
-                let data = "";
-                res.on("data", (chunk) => data += chunk);
-                res.on("end", () => {
-                  resolve({ status: res.statusCode, body: data });
-                });
-              });
-              req.on("error", reject);
-              req.write(payload);
-              req.end();
+          async function patchConfig(body) {
+            const res = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
+              method: "PATCH",
+              headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(body),
+              signal: AbortSignal.timeout(20000)
             });
+            const text = await res.text();
+            return { status: res.status, body: text };
           }
 
           async function run() {
+            console.log("🔄 Sincronizando Auth e Templates com Supabase...");
+            
             // 1. Tenta sincronizar URLs + Templates de E-mail
             const fullPayload = {
               site_url: siteUrl,
@@ -148,9 +138,10 @@ jobs:
           }
 
           run().catch((err) => {
-            console.error("Erro inesperado:", err);
+            console.error("❌ Erro inesperado:", err);
             process.exit(1);
           });
           '
+
 
 
