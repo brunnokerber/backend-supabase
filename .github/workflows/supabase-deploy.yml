@@ -16,6 +16,9 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SITE_URL: ${{ vars.SITE_URL || 'https://peludinhosdovale.vercel.app' }}
+      APP_NAME: ${{ vars.APP_NAME || 'Peludinhos do Vale' }}
+      APP_DESCRIPTION: ${{ vars.APP_DESCRIPTION || 'Sistema de Gestão Animal & Resgates' }}
 
     steps:
       - name: Checkout repository
@@ -33,6 +36,58 @@ jobs:
       - name: Deploy Edge Functions
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
 
-      # If you add Edge Functions later, deploy them from main here.
-      # Example:
-      # - run: supabase functions deploy <function-name> --project-ref "$SUPABASE_PROJECT_REF"
+      - name: Sync Auth Config & Email Templates to Supabase Cloud
+        run: |
+          node -e '
+          const fs = require("fs");
+          const https = require("https");
+
+          const projectRef = process.env.SUPABASE_PROJECT_REF;
+          const token = process.env.SUPABASE_ACCESS_TOKEN;
+          const siteUrl = (process.env.SITE_URL || "https://peludinhosdovale.vercel.app").replace(/\/$/, "");
+          const appName = process.env.APP_NAME || "Peludinhos do Vale";
+          const appDesc = process.env.APP_DESCRIPTION || "Sistema de Gestão Animal & Resgates";
+
+          let inviteHtml = fs.readFileSync("supabase/templates/invite.html", "utf8");
+          inviteHtml = inviteHtml
+            .replaceAll("{{APP_NAME}}", appName)
+            .replaceAll("{{APP_DESCRIPTION}}", appDesc);
+
+          const payload = JSON.stringify({
+            site_url: siteUrl,
+            uri_allow_list: `${siteUrl}/**,http://localhost:4200/**,http://127.0.0.1:4200/**`,
+            mailer_subjects_invite: `Convite de Acesso - ${appName}`,
+            mailer_templates_invite_content: inviteHtml
+          });
+
+          const req = https.request({
+            hostname: "api.supabase.com",
+            path: `/v1/projects/${projectRef}/config/auth`,
+            method: "PATCH",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(payload)
+            }
+          }, (res) => {
+            let data = "";
+            res.on("data", (chunk) => data += chunk);
+            res.on("end", () => {
+              if (res.statusCode >= 200 && res.statusCode < 300) {
+                console.log("Auth Config & Email Template synchronized successfully!");
+              } else {
+                console.error(`Failed to sync auth config: ${res.statusCode} - ${data}`);
+                process.exit(1);
+              }
+            });
+          });
+
+          req.on("error", (e) => {
+            console.error("Error sending request:", e);
+            process.exit(1);
+          });
+
+          req.write(payload);
+          req.end();
+          '
+
