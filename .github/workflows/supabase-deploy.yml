@@ -82,41 +82,75 @@ jobs:
             .replaceAll("{{APP_NAME}}", appName)
             .replaceAll("{{APP_DESCRIPTION}}", appDesc);
 
-          const payload = JSON.stringify({
-            site_url: siteUrl,
-            uri_allow_list: `${siteUrl}/**,http://localhost:4200/**,http://127.0.0.1:4200/**`,
-            mailer_subjects_invite: `Convite de Acesso - ${appName}`,
-            mailer_templates_invite_content: inviteHtml
-          });
+          function patchConfig(body) {
+            return new Promise((resolve, reject) => {
+              const payload = JSON.stringify(body);
+              const req = https.request({
+                hostname: "api.supabase.com",
+                path: `/v1/projects/${projectRef}/config/auth`,
+                method: "PATCH",
+                headers: {
+                  "Authorization": `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                  "Content-Length": Buffer.byteLength(payload)
+                }
+              }, (res) => {
+                let data = "";
+                res.on("data", (chunk) => data += chunk);
+                res.on("end", () => {
+                  resolve({ status: res.statusCode, body: data });
+                });
+              });
+              req.on("error", reject);
+              req.write(payload);
+              req.end();
+            });
+          }
 
-          const req = https.request({
-            hostname: "api.supabase.com",
-            path: `/v1/projects/${projectRef}/config/auth`,
-            method: "PATCH",
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json",
-              "Content-Length": Buffer.byteLength(payload)
+          async function run() {
+            // 1. Tenta sincronizar URLs + Templates de E-mail
+            const fullPayload = {
+              site_url: siteUrl,
+              uri_allow_list: `${siteUrl}/**,http://localhost:4200/**,http://127.0.0.1:4200/**`,
+              mailer_subjects_invite: `Convite de Acesso - ${appName}`,
+              mailer_templates_invite_content: inviteHtml
+            };
+
+            const res = await patchConfig(fullPayload);
+
+            if (res.status >= 200 && res.status < 300) {
+              console.log("✅ URLs e Template de E-mail sincronizados com sucesso!");
+              return;
             }
-          }, (res) => {
-            let data = "";
-            res.on("data", (chunk) => data += chunk);
-            res.on("end", () => {
-              if (res.statusCode >= 200 && res.statusCode < 300) {
-                console.log("Auth Config & Email Template synchronized successfully!");
+
+            // 2. Se for a limitação do Free Tier sem Custom SMTP
+            if (res.body.includes("Email template modification is not available for free tier")) {
+              console.warn("⚠️ Aviso: Customização de template de e-mail requer Custom SMTP no Free Tier do Supabase.");
+              console.log("➡️ Sincronizando apenas Site URL e Redirect URLs permitidas...");
+
+              const urlsOnlyPayload = {
+                site_url: siteUrl,
+                uri_allow_list: `${siteUrl}/**,http://localhost:4200/**,http://127.0.0.1:4200/**`
+              };
+
+              const urlRes = await patchConfig(urlsOnlyPayload);
+              if (urlRes.status >= 200 && urlRes.status < 300) {
+                console.log("✅ Site URL e Redirect URLs sincronizados com sucesso!");
+                return;
               } else {
-                console.error(`Failed to sync auth config: ${res.statusCode} - ${data}`);
+                console.error(`❌ Falha ao sincronizar URLs: ${urlRes.status} - ${urlRes.body}`);
                 process.exit(1);
               }
-            });
-          });
+            }
 
-          req.on("error", (e) => {
-            console.error("Error sending request:", e);
+            console.error(`❌ Erro na API do Supabase: ${res.status} - ${res.body}`);
+            process.exit(1);
+          }
+
+          run().catch((err) => {
+            console.error("Erro inesperado:", err);
             process.exit(1);
           });
-
-          req.write(payload);
-          req.end();
           '
+
 
