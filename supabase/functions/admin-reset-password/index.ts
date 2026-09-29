@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Valida se o usuário é Administrador (via metadata ou via tabela profiles)
+    // 3. Valida se o usuário é Administrador
     const isMetaAdmin =
       user.app_metadata?.role === "admin" ||
       user.user_metadata?.role === "admin";
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const isProfileAdmin = profile && profile.role === "admin" && profile.ativo !== false;
 
     if (!isMetaAdmin && !isProfileAdmin) {
-      return new Response(JSON.stringify({ error: "Apenas administradores podem convidar ou disparar redefinição de usuários." }), {
+      return new Response(JSON.stringify({ error: "Apenas administradores podem disparar redefinição de senha para outros usuários." }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
 
     // 4. Recebe os dados da requisição
     const body = await req.json();
-    const { email, role, redirectTo } = body;
+    const { email, redirectTo } = body;
     const cleanEmail = (email || "").trim().toLowerCase();
 
     if (!cleanEmail) {
@@ -80,37 +80,13 @@ Deno.serve(async (req) => {
 
     const finalRedirectTo = redirectTo || `${baseUrl.replace(/\/$/, "")}/definir-senha`;
 
-    // 5. Fluxo de convite
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      cleanEmail,
-      {
-        redirectTo: finalRedirectTo,
-        data: {
-          role: role || "user",
-        },
-      }
-    );
+    // 5. Dispara o e-mail de redefinição de senha
+    const { data: resetData, error: resetError } = await adminClient.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: finalRedirectTo,
+    });
 
-    if (inviteError) {
-      const isAlreadyRegistered =
-        inviteError.message?.toLowerCase().includes("already") ||
-        inviteError.message?.toLowerCase().includes("registered") ||
-        inviteError.status === 422;
-
-      if (isAlreadyRegistered) {
-        return new Response(
-          JSON.stringify({
-            error: "Este e-mail já está cadastrado no sistema.",
-            code: "user_already_exists",
-          }),
-          {
-            status: 409,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      return new Response(JSON.stringify({ error: inviteError.message }), {
+    if (resetError) {
+      return new Response(JSON.stringify({ error: resetError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -119,8 +95,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Convite enviado com sucesso para ${cleanEmail}`,
-        data: inviteData,
+        message: `E-mail de redefinição de senha enviado com sucesso para ${cleanEmail}`,
+        data: resetData,
       }),
       {
         status: 200,
@@ -134,4 +110,3 @@ Deno.serve(async (req) => {
     });
   }
 });
-
