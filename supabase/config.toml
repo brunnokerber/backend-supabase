@@ -441,3 +441,10 @@ verify_jwt = false
 import_map = "./functions/admin-reset-password/deno.json"
 entrypoint = "./functions/admin-reset-password/index.ts"
 
+[functions.toggle-user-status]
+enabled = true
+verify_jwt = false
+import_map = "./functions/toggle-user-status/deno.json"
+entrypoint = "./functions/toggle-user-status/index.ts"
+
+

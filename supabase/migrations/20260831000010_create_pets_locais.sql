@@ -20,21 +20,21 @@ create policy "Authenticated users can read pets_locais"
   on public.pets_locais
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Authenticated users can insert pets_locais" on public.pets_locais;
 create policy "Authenticated users can insert pets_locais"
   on public.pets_locais
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Authenticated users can update pets_locais" on public.pets_locais;
 create policy "Authenticated users can update pets_locais"
   on public.pets_locais
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_pets_locais_updated_at
 before update on public.pets_locais

@@ -19,21 +19,21 @@ create policy "Authenticated users can read consultas_exames"
   on public.consultas_exames
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Authenticated users can insert consultas_exames" on public.consultas_exames;
 create policy "Authenticated users can insert consultas_exames"
   on public.consultas_exames
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Authenticated users can update consultas_exames" on public.consultas_exames;
 create policy "Authenticated users can update consultas_exames"
   on public.consultas_exames
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_consultas_exames_updated_at
 before update on public.consultas_exames

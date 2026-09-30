@@ -27,21 +27,21 @@ create policy "Authenticated users can read pets"
   on public.pets
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Users can insert pets" on public.pets;
 create policy "Users can insert pets"
   on public.pets
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Users can update pets" on public.pets;
 create policy "Users can update pets"
   on public.pets
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_pets_updated_at
 before update on public.pets

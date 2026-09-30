@@ -17,21 +17,21 @@ create policy "Authenticated users can read doacoes"
   on public.doacoes
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Authenticated users can insert doacoes" on public.doacoes;
 create policy "Authenticated users can insert doacoes"
   on public.doacoes
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Authenticated users can update doacoes" on public.doacoes;
 create policy "Authenticated users can update doacoes"
   on public.doacoes
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_doacoes_updated_at
 before update on public.doacoes

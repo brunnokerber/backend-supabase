@@ -19,21 +19,21 @@ create policy "Authenticated users can read vacinas"
   on public.vacinas
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Authenticated users can insert vacinas" on public.vacinas;
 create policy "Authenticated users can insert vacinas"
   on public.vacinas
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Authenticated users can update vacinas" on public.vacinas;
 create policy "Authenticated users can update vacinas"
   on public.vacinas
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_vacinas_updated_at
 before update on public.vacinas

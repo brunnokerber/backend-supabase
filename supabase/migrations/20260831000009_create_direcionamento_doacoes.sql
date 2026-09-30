@@ -16,21 +16,21 @@ create policy "Authenticated users can read direcionamento_doacoes"
   on public.direcionamento_doacoes
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Authenticated users can insert direcionamento_doacoes" on public.direcionamento_doacoes;
 create policy "Authenticated users can insert direcionamento_doacoes"
   on public.direcionamento_doacoes
   for insert
   to authenticated
-   with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Authenticated users can update direcionamento_doacoes" on public.direcionamento_doacoes;
 create policy "Authenticated users can update direcionamento_doacoes"
   on public.direcionamento_doacoes
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_direcionamento_doacoes_updated_at
 before update on public.direcionamento_doacoes

@@ -34,7 +34,7 @@ before update on public.profiles
 for each row
 execute function public.set_profiles_updated_at();
 
--- 4. Função auxiliar para verificar se quem está logado é admin
+-- 4. Funções auxiliares para verificação de permissões
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -56,6 +56,31 @@ as $$
         where id = auth.uid()
           and role = 'admin'
           and ativo = true
+          and deleted_at is null
+      )
+    );
+$$;
+
+create or replace function public.is_active_user()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select
+    -- Permite acessos de sistema e service_role
+    current_user in ('postgres', 'supabase_admin', 'service_role')
+    or (auth.role() = 'service_role')
+    -- Usuário autenticado deve possuir perfil com ativo = true e sem deleted_at
+    or (
+      auth.uid() is not null
+      and exists (
+        select 1
+        from public.profiles
+        where id = auth.uid()
+          and ativo = true
+          and deleted_at is null
       )
     );
 $$;
@@ -129,17 +154,17 @@ using (
   auth.uid() = id or public.is_admin()
 );
 
--- Atualização: Usuário edita sua própria conta; Admins editam qualquer uma
+-- Atualização: Usuário ativo edita sua própria conta; Admins editam qualquer uma
 drop policy if exists "Atualizacao de perfis: proprio usuario ou admin" on public.profiles;
 create policy "Atualizacao de perfis: proprio usuario ou admin"
 on public.profiles
 for update
 to authenticated
 using (
-  auth.uid() = id or public.is_admin()
+  (auth.uid() = id and public.is_active_user()) or public.is_admin()
 )
 with check (
-  auth.uid() = id or public.is_admin()
+  (auth.uid() = id and public.is_active_user()) or public.is_admin()
 );
 
 -- 7. Proteção contra escalação de privilégios

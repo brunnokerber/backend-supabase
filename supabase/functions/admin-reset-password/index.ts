@@ -6,6 +6,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function jsonResponse(body: object, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function errorResponse(message: string, status = 400, code?: string) {
+  return jsonResponse(
+    {
+      error: message,
+      message,
+      ...(code ? { code } : {}),
+    },
+    status
+  );
+}
+
+function successResponse(message: string, data: any = {}, status = 200) {
+  return jsonResponse(
+    {
+      success: true,
+      message,
+      data,
+    },
+    status
+  );
+}
+
 Deno.serve(async (req) => {
   // Trata pre-flight CORS do navegador
   if (req.method === "OPTIONS") {
@@ -23,40 +52,36 @@ Deno.serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
 
     if (!token) {
-      return new Response(JSON.stringify({ error: "Token de autenticação não fornecido." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Token de autenticação não fornecido.", 401, "unauthorized");
     }
 
     // 2. Valida o usuário dono do token via Supabase Auth
     const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Sessão inválida ou expirada." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Sessão inválida ou expirada.", 401, "session_expired");
     }
 
-    // 3. Valida se o usuário é Administrador
+    // 3. Valida se o usuário é Administrador ativo
     const isMetaAdmin =
       user.app_metadata?.role === "admin" ||
       user.user_metadata?.role === "admin";
 
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("role, ativo")
+      .select("role, ativo, deleted_at")
       .eq("id", user.id)
       .single();
 
-    const isProfileAdmin = profile && profile.role === "admin" && profile.ativo !== false;
+    const isProfileAdmin =
+      profile && profile.role === "admin" && profile.ativo === true && !profile.deleted_at;
 
     if (!isMetaAdmin && !isProfileAdmin) {
-      return new Response(JSON.stringify({ error: "Apenas administradores podem disparar redefinição de senha para outros usuários." }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(
+        "Apenas administradores podem disparar redefinição de senha para outros usuários.",
+        403,
+        "forbidden"
+      );
     }
 
     // 4. Recebe os dados da requisição
@@ -65,10 +90,7 @@ Deno.serve(async (req) => {
     const cleanEmail = (email || "").trim().toLowerCase();
 
     if (!cleanEmail) {
-      return new Response(JSON.stringify({ error: "E-mail não informado." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("E-mail não informado.", 400, "email_required");
     }
 
     // Determina a URL base para onde o usuário será redirecionado
@@ -86,27 +108,19 @@ Deno.serve(async (req) => {
     });
 
     if (resetError) {
-      return new Response(JSON.stringify({ error: resetError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(resetError.message, 400, "reset_failed");
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `E-mail de redefinição de senha enviado com sucesso para ${cleanEmail}`,
-        data: resetData,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+    return successResponse(
+      `E-mail de redefinição de senha enviado com sucesso para ${cleanEmail}`,
+      resetData,
+      200
     );
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || "Erro interno no servidor." }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(
+      err.message || "Erro interno no servidor.",
+      500,
+      "internal_server_error"
+    );
   }
 });

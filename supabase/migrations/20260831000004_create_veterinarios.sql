@@ -16,21 +16,21 @@ create policy "Authenticated users can read veterinarios"
   on public.veterinarios
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Authenticated users can insert veterinarios" on public.veterinarios;
 create policy "Authenticated users can insert veterinarios"
   on public.veterinarios
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Authenticated users can update veterinarios" on public.veterinarios;
 create policy "Authenticated users can update veterinarios"
   on public.veterinarios
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_veterinarios_updated_at
 before update on public.veterinarios

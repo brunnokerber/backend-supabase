@@ -19,21 +19,21 @@ create policy "Authenticated users can read entradas"
   on public.entradas
   for select
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists "Authenticated users can insert entradas" on public.entradas;
 create policy "Authenticated users can insert entradas"
   on public.entradas
   for insert
   to authenticated
-  with check (true);
+  with check (public.is_active_user());
 
 drop policy if exists "Authenticated users can update entradas" on public.entradas;
 create policy "Authenticated users can update entradas"
   on public.entradas
   for update
   to authenticated
-  using (true);
+  using (public.is_active_user());
 
 create trigger set_entradas_updated_at
 before update on public.entradas
