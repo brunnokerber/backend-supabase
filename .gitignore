@@ -1,3 +1,25 @@
 supabase/.branches/
 supabase/.temp/
 .env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+venv/
+
+# Planilhas legadas e dados sensíveis (LGPD / Privacidade)
+*.xlsx
+*.xls
+*.csv
+assets/
+etl/data/input/*
+!etl/data/input/.gitkeep
+
+# Saídas geradas pelo pipeline ETL
+etl/data/output/*
+!etl/data/output/.gitkeep
+supabase/*_etl.sql
