@@ -12,7 +12,7 @@ create table if not exists consultas_exames(
 
 alter table public.consultas_exames enable row level security;
 
-grant select,insert, update on table public.consultas_exames to authenticated;
+grant select, insert, update, delete on table public.consultas_exames to authenticated;
 
 drop policy if exists "Authenticated users can read consultas_exames" on public.consultas_exames;
 create policy "Authenticated users can read consultas_exames"
@@ -35,6 +35,14 @@ create policy "Authenticated users can update consultas_exames"
   to authenticated
   using (public.is_active_user());
 
+drop policy if exists "Admins can delete consultas_exames" on public.consultas_exames;
+create policy "Admins can delete consultas_exames"
+  on public.consultas_exames
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+drop trigger if exists set_consultas_exames_updated_at on public.consultas_exames;
 create trigger set_consultas_exames_updated_at
 before update on public.consultas_exames
 for each row execute function public.handle_updated_at();

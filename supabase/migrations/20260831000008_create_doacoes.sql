@@ -1,4 +1,4 @@
-create table if not exists doacoes(
+create table if not exists public.doacoes (
   id bigint generated always as identity primary key,
   volume decimal(10,2) not null,
   doador varchar(50) not null,
@@ -10,7 +10,7 @@ create table if not exists doacoes(
 
 alter table public.doacoes enable row level security;
 
-grant select,insert, update on table public.doacoes to authenticated;
+grant select, insert, update on table public.doacoes to authenticated;
 
 drop policy if exists "Authenticated users can read doacoes" on public.doacoes;
 create policy "Authenticated users can read doacoes"
@@ -33,6 +33,7 @@ create policy "Authenticated users can update doacoes"
   to authenticated
   using (public.is_active_user());
 
+drop trigger if exists set_doacoes_updated_at on public.doacoes;
 create trigger set_doacoes_updated_at
 before update on public.doacoes
 for each row execute function public.handle_updated_at();

@@ -130,5 +130,5 @@ class VeterinarioRecord:
     """Registro de médico veterinário na tabela public.veterinarios."""
     nome: str
     telefone: str = "00000000000"
-    crvet: str = "00000"
+    crmv: str = "00000"
 

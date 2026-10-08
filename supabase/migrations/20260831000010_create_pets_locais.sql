@@ -13,7 +13,7 @@ create table if not exists pets_locais(
 
 alter table public.pets_locais enable row level security;
 
-grant select,insert, update on table public.pets_locais to authenticated;
+grant select, insert, update, delete on table public.pets_locais to authenticated;
 
 drop policy if exists "Authenticated users can read pets_locais" on public.pets_locais;
 create policy "Authenticated users can read pets_locais"
@@ -36,6 +36,14 @@ create policy "Authenticated users can update pets_locais"
   to authenticated
   using (public.is_active_user());
 
+drop policy if exists "Admins can delete pets_locais" on public.pets_locais;
+create policy "Admins can delete pets_locais"
+  on public.pets_locais
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+drop trigger if exists set_pets_locais_updated_at on public.pets_locais;
 create trigger set_pets_locais_updated_at
 before update on public.pets_locais
 for each row execute function public.handle_updated_at();

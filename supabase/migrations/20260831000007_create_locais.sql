@@ -1,4 +1,4 @@
-create table if not exists locais(
+create table if not exists public.locais (
   id bigint generated always as identity primary key,
   tipo_local varchar(30) not null,
   contato varchar(50) not null,
@@ -17,7 +17,7 @@ create table if not exists locais(
 
 alter table public.locais enable row level security;
 
-grant select,insert, update on table public.locais to authenticated;
+grant select, insert, update on table public.locais to authenticated;
 
 drop policy if exists "Authenticated users can read locais" on public.locais;
 create policy "Authenticated users can read locais"
@@ -40,6 +40,7 @@ create policy "Authenticated users can update locais"
   to authenticated
   using (public.is_active_user());
 
+drop trigger if exists set_locais_updated_at on public.locais;
 create trigger set_locais_updated_at
 before update on public.locais
 for each row execute function public.handle_updated_at();

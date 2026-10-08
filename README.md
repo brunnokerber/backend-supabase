@@ -30,8 +30,16 @@ O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e 
     - Controle de distribuição de doações para os locais/lares temporários.
 11. **`pets_locais`** (`20260831000010_create_pets_locais.sql`):
     - Histórico de hospedagem e permanência dos pets nos locais/lares temporários com controle de auxílio financeiro.
+12. **`voluntarios`** (`20261008000011_create_voluntarios.sql`):
+    - Cadastro de voluntários da organização (nome, e-mail, telefone, dias da semana, turnos e observações). RLS restrito a administradores.
+13. **`indexes_and_search`** (`20261008000012_create_indexes_and_search.sql`):
+    - Extensão `pg_trgm`, índices em todas as Foreign Keys (FKs), ordenação de prontuários e índices GIN para busca textual de alta performance.
 
 ---
+
+## Stored Procedures (RPCs)
+- **`create_pet_com_entrada(p_pet_data, p_entrada_data)`**: Criação atômica de Pet e registro de Entrada em uma única transação (`SECURITY DEFINER`).
+- **`update_pet_com_entrada(p_pet_id, p_pet_data, p_entrada_data)`**: Atualização conjunta de dados cadastrais e de entrada do animal com consistência transacional.
 
 ## Como Rodar Localmente
 

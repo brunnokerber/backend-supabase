@@ -12,7 +12,7 @@ create table if not exists vacinas(
 
 alter table public.vacinas enable row level security;
 
-grant select,insert, update on table public.vacinas to authenticated;
+grant select, insert, update, delete on table public.vacinas to authenticated;
 
 drop policy if exists "Authenticated users can read vacinas" on public.vacinas;
 create policy "Authenticated users can read vacinas"
@@ -35,6 +35,14 @@ create policy "Authenticated users can update vacinas"
   to authenticated
   using (public.is_active_user());
 
+drop policy if exists "Admins can delete vacinas" on public.vacinas;
+create policy "Admins can delete vacinas"
+  on public.vacinas
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+drop trigger if exists set_vacinas_updated_at on public.vacinas;
 create trigger set_vacinas_updated_at
 before update on public.vacinas
 for each row execute function public.handle_updated_at();
