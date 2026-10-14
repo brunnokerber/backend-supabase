@@ -83,12 +83,12 @@ class SQLGenerator:
   IF v_pet_id IS NULL THEN
     INSERT INTO public.pets (
       tipo_pet, sexo, status, nome, senioridade, data_nascimento, data_castracao,
-      link_documentos, cor_majoritaria, raca, porte, moura, chip, rga
+      link_documentos, foto_url, cor_majoritaria, raca, porte, moura, chip, rga
     )
     VALUES (
       {sql_escape(p.tipo_pet)}, {sql_escape(p.sexo)}, {sql_escape(p.status)}, {sql_escape(p.nome)},
       {sql_escape(p.senioridade)}, {sql_escape(p.data_nascimento)}, {sql_escape(p.data_castracao)},
-      {sql_escape(p.link_documentos)}, {sql_escape(p.cor_majoritaria)}, {sql_escape(p.raca)},
+      {sql_escape(p.link_documentos)}, {sql_escape(p.foto_url)}, {sql_escape(p.cor_majoritaria)}, {sql_escape(p.raca)},
       {sql_escape(p.porte)}, {sql_escape(p.moura)}, {sql_escape(p.chip)}, {sql_escape(p.rga)}
     )
     RETURNING id INTO v_pet_id;

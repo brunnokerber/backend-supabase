@@ -72,6 +72,7 @@ begin
     data_nascimento  = case when p_pet_data ? 'data_nascimento' then (p_pet_data->>'data_nascimento')::date else data_nascimento end,
     data_castracao   = case when p_pet_data ? 'data_castracao' then (p_pet_data->>'data_castracao')::date else data_castracao end,
     link_documentos  = case when p_pet_data ? 'link_documentos' then (p_pet_data->>'link_documentos')::text else link_documentos end,
+    foto_url         = case when p_pet_data ? 'foto_url' then (p_pet_data->>'foto_url')::text else foto_url end,
     moura            = case when p_pet_data ? 'moura' then (p_pet_data->>'moura')::varchar(30) else moura end,
     chip             = case when p_pet_data ? 'chip' then (p_pet_data->>'chip')::varchar(30) else chip end,
     rga              = case when p_pet_data ? 'rga' then (p_pet_data->>'rga')::varchar(30) else rga end
@@ -134,6 +135,7 @@ begin
     data_nascimento,
     data_castracao,
     link_documentos,
+    foto_url,
     moura,
     chip,
     rga
@@ -150,6 +152,7 @@ begin
     (p_pet_data->>'data_nascimento')::date,
     (p_pet_data->>'data_castracao')::date,
     (p_pet_data->>'link_documentos')::text,
+    (p_pet_data->>'foto_url')::text,
     (p_pet_data->>'moura')::varchar(30),
     (p_pet_data->>'chip')::varchar(30),
     (p_pet_data->>'rga')::varchar(30)

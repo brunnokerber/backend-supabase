@@ -65,7 +65,7 @@ Ao concluir qualquer tarefa que envolva mudanças no banco de dados, regras de s
 ### 6. Módulo de ETL (Python)
 - **Conformidade com o Frontend:** Manter sincronizados os enums e regras de negócio de `models.py` e `transformer.py` com o Frontend Angular (ex: cálculo de senioridade, tipos de pet, vacinas padronizadas).
 - **Isolamento de Seeds:**
-  - `supabase/seed.sql`: Contém **apenas** a criação do usuário administrador inicial (`admin@admin.com` / `admin123`).
+  - `supabase/seed.sql`: Contém **apenas** a criação do usuário administrador inicial (`admin@admin.com` / `Admin@123`).
   - `etl/data/output/seed_peludinhos_etl.sql`: Contém os dados legados processados pelo pipeline ETL, aplicados via `python -m etl.main --load-db`.
 
 ---

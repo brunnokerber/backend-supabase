@@ -25,6 +25,7 @@ TIPO_OPERACAO_OPTIONS = [
 VACINAS_SUGESTOES = [
     'V8 (Óctupla Canina)',
     'V10 (Déctupla Canina)',
+    'DHPPI (Polivalente Canina)',
     'Antirrábica (Raiva)',
     'Giárdiase',
     'Gripe Canina (Tosse dos Canis)',
@@ -58,6 +59,7 @@ class PetRecord:
     data_nascimento: Optional[str] = None
     data_castracao: Optional[str] = None
     link_documentos: Optional[str] = None
+    foto_url: Optional[str] = None
     cor_majoritaria: Optional[str] = None
     moura: Optional[str] = None
     chip: Optional[str] = None

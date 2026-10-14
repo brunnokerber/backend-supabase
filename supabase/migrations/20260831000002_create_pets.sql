@@ -8,6 +8,7 @@ create table if not exists public.pets (
   data_nascimento date,
   data_castracao date,
   link_documentos text,
+  foto_url text,
   cor_majoritaria varchar(30),
   raca varchar(30) not null,
   porte varchar(30) not null,  
@@ -43,6 +44,58 @@ create policy "Users can update pets"
   to authenticated
   using (public.is_active_user());
 
+drop trigger if exists set_pets_updated_at on public.pets;
 create trigger set_pets_updated_at
 before update on public.pets
 for each row execute function public.handle_updated_at();
+
+-- Criação do Bucket 'pets' no Supabase Storage
+-- Privado (public = false): visualização restrita a usuários autenticados
+-- file_size_limit: 262144 bytes (256 KB)
+-- allowed_mime_types: apenas imagens jpeg, png e webp
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'pets',
+  'pets',
+  false,
+  262144,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- Políticas de Segurança (Row Level Security) em storage.objects para o bucket 'pets'
+
+-- Leitura: apenas usuários autenticados e ativos
+drop policy if exists "Authenticated active users can read pet images" on storage.objects;
+create policy "Authenticated active users can read pet images"
+  on storage.objects
+  for select
+  to authenticated
+  using (bucket_id = 'pets' and public.is_active_user());
+
+-- Upload (inserção): apenas usuários autenticados e ativos
+drop policy if exists "Authenticated active users can upload pet images" on storage.objects;
+create policy "Authenticated active users can upload pet images"
+  on storage.objects
+  for insert
+  to authenticated
+  with check (bucket_id = 'pets' and public.is_active_user());
+
+-- Atualização / substituição de imagem: apenas usuários autenticados e ativos
+drop policy if exists "Authenticated active users can update pet images" on storage.objects;
+create policy "Authenticated active users can update pet images"
+  on storage.objects
+  for update
+  to authenticated
+  using (bucket_id = 'pets' and public.is_active_user());
+
+-- Exclusão: restrita a administradores
+drop policy if exists "Admins can delete pet images" on storage.objects;
+create policy "Admins can delete pet images"
+  on storage.objects
+  for delete
+  to authenticated
+  using (bucket_id = 'pets' and public.is_admin());

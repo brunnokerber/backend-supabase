@@ -52,9 +52,55 @@ class ExcelExtractor:
         """Retorna os nomes de todas as abas encontradas na pasta de trabalho."""
         return list(self.sheet_map.keys())
 
+    def _load_sheet_hyperlinks(self, z: zipfile.ZipFile, xml_path: str) -> Dict[str, str]:
+        """Extrai o mapeamento de referência da célula (ex: 'T2') para a URL do hiperlink."""
+        sheet_dir, sheet_file = os.path.split(xml_path)
+        rels_path = f"{sheet_dir}/_rels/{sheet_file}.rels"
+        rels = {}
+        if rels_path in z.namelist():
+            try:
+                rtree = ET.fromstring(z.read(rels_path))
+                for r in rtree.findall("{http://schemas.openxmlformats.org/package/2006/relationships}Relationship"):
+                    r_id = r.attrib.get("Id")
+                    target = r.attrib.get("Target")
+                    if r_id and target:
+                        rels[r_id] = target
+            except Exception:
+                pass
+
+        hyperlinks = {}
+        try:
+            stree = ET.fromstring(z.read(xml_path))
+            hl_tag = stree.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}hyperlinks")
+            if hl_tag is not None:
+                for hl in hl_tag.findall("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}hyperlink"):
+                    ref = hl.attrib.get("ref")
+                    r_id = hl.attrib.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")
+                    target = rels.get(r_id) or hl.attrib.get("location")
+                    if ref and target:
+                        hyperlinks[ref] = target
+        except Exception:
+            pass
+
+        return hyperlinks
+
+    def get_sheet_hyperlinks(self, sheet_name: str) -> Dict[str, str]:
+        """Retorna todos os hiperlinks da aba especificada no formato {ref_celula: url}."""
+        xml_path = self.sheet_map.get(sheet_name)
+        if not xml_path:
+            for k, v in self.sheet_map.items():
+                if k.lower() == sheet_name.lower():
+                    xml_path = v
+                    break
+        if not xml_path:
+            return {}
+        with zipfile.ZipFile(self.file_path, "r") as z:
+            return self._load_sheet_hyperlinks(z, xml_path)
+
     def read_sheet(self, sheet_name: str) -> List[Tuple[int, Dict[str, str]]]:
         """
         Retorna uma lista de tuplas (numero_da_linha, {letra_coluna: valor_celula}) para linhas não vazias.
+        Se uma célula possuir hiperlink associado, disponibiliza também a chave '{letra_coluna}_link' com a URL.
         """
         xml_path = self.sheet_map.get(sheet_name)
         if not xml_path:
@@ -67,6 +113,7 @@ class ExcelExtractor:
             raise ValueError(f"Aba '{sheet_name}' não encontrada no arquivo.")
 
         with zipfile.ZipFile(self.file_path, "r") as z:
+            sheet_hyperlinks = self._load_sheet_hyperlinks(z, xml_path)
             s_xml = z.read(xml_path)
             tree = ET.fromstring(s_xml)
             rows_data = []
@@ -91,6 +138,10 @@ class ExcelExtractor:
                     
                     if val is not None and str(val).strip():
                         cols[col_letter] = str(val).strip()
+
+                    # Mapear hiperlink se houver na célula
+                    if r in sheet_hyperlinks:
+                        cols[f"{col_letter}_link"] = sheet_hyperlinks[r]
                 
                 if any(cols.values()):
                     rows_data.append((r_idx, cols))

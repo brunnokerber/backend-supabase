@@ -4,7 +4,7 @@ DO $$
 DECLARE
   admin_user_id uuid := 'a0000000-0000-0000-0000-000000000001';
   admin_email text := 'admin@admin.com';
-  admin_password text := 'admin123';
+  admin_password text := 'Admin@123';
   existing_user_id uuid;
 BEGIN
   -- 1. Verifica se já existe um usuário com esse email no auth.users

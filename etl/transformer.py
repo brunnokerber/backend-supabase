@@ -194,8 +194,12 @@ class PetTransformer:
         Mapeia a descrição da vacina para as opções sugeridas no Frontend (VACINAS_SUGESTOES).
         """
         lower = raw_name.lower().strip()
-        if "poli" in lower or "v10" in lower or "decupla" in lower or "déctupla" in lower or "octupla" in lower or "v8" in lower:
+        if "dhppi" in lower or "dhpp" in lower or "poli" in lower:
+            return "DHPPI (Polivalente Canina)"
+        if "v10" in lower or "decupla" in lower or "déctupla" in lower:
             return "V10 (Déctupla Canina)"
+        if "v8" in lower or "octupla" in lower or "óctupla" in lower:
+            return "V8 (Óctupla Canina)"
         if "raiva" in lower or "antirrabica" in lower or "antirrábica" in lower:
             return "Antirrábica (Raiva)"
         if "gripe" in lower or "tosse" in lower or "mara" in lower:
@@ -204,8 +208,14 @@ class PetTransformer:
             return "Giárdiase"
         if "leish" in lower:
             return "Leishmaniose"
+        if "v3" in lower or "triplice" in lower or "tríplice" in lower:
+            return "Tríplice Felina (V3)"
+        if "v4" in lower or "quadrupla" in lower or "quádrupla" in lower:
+            return "Quádrupla Felina (V4)"
+        if "v5" in lower or "quintupla" in lower or "quíntupla" in lower:
+            return "Quíntupla Felina (V5)"
         
-        return "V10 (Déctupla Canina)"
+        return "DHPPI (Polivalente Canina)"
 
     @staticmethod
     def normalize_tipo_local(nome_local: str) -> str:

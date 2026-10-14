@@ -34,19 +34,28 @@ etl/
 O pipeline garante a integridade de todas as colunas `NOT NULL` e respeita os enums/opções do Frontend:
 
 1. **`tipo_pet`**: `'Cachorro'` (padrão de acordo com `TIPO_PET_OPTIONS`).
-2. **`sexo`**: `'Macho'` ou `'Fêmea'` (`SEXO_OPTIONS`).
-3. **`status`**: `'Disponível'`, `'Adotado'`, `'Óbito'`, `'Em Tratamento'` ou `'Quarentena'` (`STATUS_OPTIONS`).
-4. **`senioridade`**: `'Filhote'`, `'Adulto'` ou `'Sênior'` (`SENIORIDADE_OPTIONS`), calculado rigorosamente pela mesma regra do frontend (`calculateSenioridade`):
+2. **`sexo`**: `'Macho'` ou `'Fêmea'` (`SEXO_OPTIONS`). Mapeado diretamente da coluna **`D` (Sexo)**, com fallback para inferência por desinência de nome e palavras-chave caso não preenchido.
+3. **`status`**: `'Disponível'`, `'Adotado'`, `'Óbito'`, `'Em Tratamento'` ou `'Quarentena'` (`STATUS_OPTIONS`), inferido pela coluna **`A` (Situação)** e pelo nome da aba.
+4. **`senioridade`**: `'Filhote'`, `'Adulto'` ou `'Sênior'` (`SENIORIDADE_OPTIONS`), calculado rigorosamente pela data de nascimento da coluna **`E` (Idade/nasc)** seguindo a mesma regra do frontend (`calculateSenioridade`):
    - Menos de 12 meses: `'Filhote'`
    - De 1 a menos de 7 anos: `'Adulto'`
    - 7 anos ou mais: `'Sênior'`
 5. **`porte`**: `'Médio'` (com identificação de `'Pequeno'`, `'Mini'` ou `'Grande'`).
 6. **`raca`**: Identificação automática de raças (`Shih-tzu`, `Poodle`, `Pitbull`, `Dachshund`, `Pinscher`, etc.) com fallback seguro para `'SRD'`.
-7. **`data_nascimento` / `data_castracao`**: Conversão de seriais Excel e datas em texto para o formato ISO `YYYY-MM-DD`.
-8. **Identificadores (`moura`, `chip`, `rga`)**: Tratamento e remoção de notação científica do Excel.
-9. **`vacinas`**: Padronizadas conforme `VACINAS_SUGESTOES` (`'V10 (Déctupla Canina)'`, `'Antirrábica (Raiva)'`, `'Gripe Canina (Tosse dos Canis)'`).
-10. **`locais`**: Mapeados conforme `TIPO_LOCAL_OPTIONS` (`'Lar Temporário'`, `'Clínica Veterinária'`, `'Exposição'`, `'Abrigo'`).
-11. **`consultas_exames`**: Registro automático dos procedimentos cirúrgicos de castração com `TIPO_OPERACAO_OPTIONS` (`'Procedimento Cirúrgico'`).
+7. **`data_nascimento` / `data_castracao`**: Conversão de seriais Excel e datas em texto das colunas **`E`** e **`K`** para o formato ISO `YYYY-MM-DD`.
+8. **Entrada e Acolhimento (`entradas`)**:
+   - **`resgatante`**: Mapeado diretamente da coluna **`I` (Resgatante)**, com fallback para `'Peludinhos Caninos'`.
+   - **`local_origem`**: Mapeado a partir da coluna **`H` (Pré resgate)** e histórico de resgate.
+   - **`data_entrada`**: Extraído da coluna **`J` (Entrada/Resgate)** com fallback para a data de nascimento.
+9. **Identificadores (`moura`, `chip`, `rga`, `link_documentos`)**:
+   - `link_documentos`: Extração da URL real do hiperlink associado à célula na coluna **`T`** (`LISTA GERAL`) ou **`U`** (`ADOTADOS` / `OBITOSDEVOL`), preservando links externos de armazenamento (ex: Google Drive).
+   - `moura`: Coluna **`U`** (`LISTA GERAL`) ou **`V`** (`ADOTADOS` / `OBITOSDEVOL`).
+   - `chip`: Coluna **`V`** (`LISTA GERAL`) ou **`W`** (`ADOTADOS` / `OBITOSDEVOL`).
+   - `rga`: Coluna **`W`** (`LISTA GERAL`) ou **`X`** (`ADOTADOS`).
+   - Remoção de notação científica flutuante do Excel (ex: `9.63E14` -> microchip de 15 dígitos).
+10. **`vacinas`**: Padronizadas conforme `VACINAS_SUGESTOES` (`'DHPPI (Polivalente Canina)'`, `'Antirrábica (Raiva)'`, `'Gripe Canina (Tosse dos Canis)'`, `'V10 (Déctupla Canina)'`, etc.). Cobre doses iniciais e reforços das colunas **`P`**, **`Q`**, **`R`**, **`S`** e **`T`** (reforço de raiva), além das matrizes anuais das abas de filhotes e adultos.
+11. **`locais` e Hospedagem (`pets_locais`)**: Mapeados a partir da coluna **`F` (Estadia)** e valor de auxílio na coluna **`G` (Obs)** conforme `TIPO_LOCAL_OPTIONS` (`'Lar Temporário'`, `'Clínica Veterinária'`, `'Exposição'`, `'Abrigo'`).
+12. **`consultas_exames`**: Registro automático dos procedimentos cirúrgicos de castração a partir da coluna **`K` (Castração)** com `TIPO_OPERACAO_OPTIONS` (`'Procedimento Cirúrgico'`).
 
 ---
 
@@ -84,5 +93,5 @@ python -m etl.main --export-json
 
 Para garantir total isolamento e evitar conflitos de autenticação:
 
-- **`supabase/seed.sql`**: Contém **apenas** a criação do usuário administrador (`admin@admin.com` / `admin123`) e configuração inicial do `auth.users`, `auth.identities` e `public.profiles`. Executado nativamente pelo comando `supabase db reset`.
-- **`etl/data/output/seed_peludinhos_etl.sql`**: Contém **exclusivamente** os dados da carga legada dos pets (288 pets, 288 entradas, 42 locais, 272 estadias, 503 vacinas e 247 procedimentos cirúrgicos). Aplicado via `python -m etl.main --load-db` ou pelo SQL Editor do Studio.
+- **`supabase/seed.sql`**: Contém **apenas** a criação do usuário administrador (`admin@admin.com` / `Admin@123`) e configuração inicial do `auth.users`, `auth.identities` e `public.profiles`. Executado nativamente pelo comando `supabase db reset`.
+- **`etl/data/output/seed_peludinhos_etl.sql`**: Contém **exclusivamente** os dados da carga legada dos pets (347 pets, 347 entradas, 44 locais, 330 estadias/pets_locais, 538 doses de vacinas e 289 procedimentos cirúrgicos). Aplicado via `python -m etl.main --load-db` ou pelo SQL Editor do Studio.

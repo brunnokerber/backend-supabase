@@ -13,9 +13,9 @@ O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e 
 2. **`handle_updated_at`** (`20260831000001_create_update_at_function.sql`):
    - Função utilitária global para atualização automática do campo `updated_at` via triggers.
 3. **`pets`** (`20260831000002_create_pets.sql`):
-   - Cadastro dos animais resgatados (status, nome, datas, porte, pelagem, chip, rga, etc.).
+   - Cadastro dos animais resgatados (status, nome, datas, porte, pelagem, chip, rga, link_documentos, foto_url), criação do bucket privado `pets` no Supabase Storage (limite de 256 KB, restrição MIME para imagens) e políticas de RLS para acesso autenticado.
 4. **`entradas`** (`20260831000003_create_entradas.sql`):
-   - Registro de entrada do pet na organização/abrigo, vinculado ao usuário responsável (`auth.users`) e ao animal.
+   - Registro de entrada do pet na organização/abrigo, vinculado ao usuário responsável (`auth.users`) e ao animal. Contém as RPCs transacionais atômicas `create_pet_com_entrada` e `update_pet_com_entrada`.
 5. **`veterinarios`** (`20260831000004_create_veterinarios.sql`):
    - Cadastro de médicos veterinários e clínicas parceiras (nome, telefone, CRMV).
 6. **`vacinas`** (`20260831000005_create_vacinas.sql`):
@@ -38,8 +38,28 @@ O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e 
 ---
 
 ## Stored Procedures (RPCs)
-- **`create_pet_com_entrada(p_pet_data, p_entrada_data)`**: Criação atômica de Pet e registro de Entrada em uma única transação (`SECURITY DEFINER`).
-- **`update_pet_com_entrada(p_pet_id, p_pet_data, p_entrada_data)`**: Atualização conjunta de dados cadastrais e de entrada do animal com consistência transacional.
+- **`create_pet_com_entrada(p_pet_data, p_entrada_data)`**: Criação atômica de Pet (incluindo `foto_url`, identificadores e documentos) e registro de Entrada em uma única transação (`SECURITY DEFINER`).
+- **`update_pet_com_entrada(p_pet_id, p_pet_data, p_entrada_data)`**: Atualização conjunta de dados cadastrais do animal (incluindo `foto_url`) e de entrada com consistência transacional.
+
+---
+
+## Armazenamento de Imagens (Supabase Storage)
+
+- **Bucket:** `pets` (privado, `public = false`).
+- **Tamanho Máximo por Arquivo:** `256 KB` (`262144` bytes).
+- **Tipos de Arquivo Permitidos:** `image/jpeg`, `image/png`, `image/webp`.
+- **Políticas de Acesso (RLS):**
+  - `SELECT`: Apenas usuários autenticados e ativos (`public.is_active_user()`).
+  - `INSERT` / `UPDATE`: Usuários autenticados e ativos (`public.is_active_user()`).
+  - `DELETE`: Exclusivo para administradores (`public.is_admin()`).
+- **Consumo no Frontend:**
+  - O upload gera o caminho do arquivo (ex: `avatars/pet-123.webp`), que é persistido via RPC em `pets.foto_url`.
+  - Na tela de detalhes do pet, a URL assinada é gerada com:
+    ```typescript
+    const { data: { signedUrl } } = await supabase.storage
+      .from('pets')
+      .createSignedUrl(pet.foto_url, 3600);
+    ```
 
 ## Como Rodar Localmente
 
@@ -66,6 +86,17 @@ supabase db reset
   - `user`: Usuário autenticado padrão.
   - `admin`: Usuário com privilégios administrativos. Pode ser promovido alterando a coluna `role` em `public.profiles`.
 - **Row Level Security (RLS):** Ativo em todas as tabelas, garantindo que apenas requisições autenticadas possam consultar ou manipular dados.
+- **Política de Senhas Fortes (`config.toml`):**
+  - Mínimo de 8 caracteres (`minimum_password_length = 8`).
+  - Complexidade obrigatória (`password_requirements = "lower_upper_letters_digits_symbols"`): exige letras maiúsculas, minúsculas, números e caracteres especiais.
+- **Governança de Acesso e Sessão (`config.toml`):**
+  - **Inscrição Pública Desativada:** Tanto em `[auth]` quanto em `[auth.email]`, o cadastro direto está fechado (`enable_signup = false`). Novos voluntários só entram via convite disparado por Administradores (Edge Function `invite-user`).
+  - **Reautenticação em Alteração de Senha:** `secure_password_change = true`, exigindo sessão recente para atualizar a credencial.
+  - **Controle de Inatividade de Sessão:** `timebox = "24h"` (logout forçado após 24h) e `inactivity_timeout = "8h"` (logout automático por ociosidade).
+- **Usuário Administrador Padrão (Ambiente de Desenvolvimento / `seed.sql`):**
+  - **E-mail:** `admin@admin.com`
+  - **Senha:** `Admin@123`
+  - **Role:** `admin`
 
 ---
 

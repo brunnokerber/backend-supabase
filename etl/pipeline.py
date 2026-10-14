@@ -81,34 +81,58 @@ class PeludinhosETLPipeline:
                 continue
             self.seen_pet_names.add(pet_key)
 
-            # Extração dos campos brutos da linha
+            # Extração dos campos brutos da linha conforme novo layout
             raw_status = row.get('A')
-            raw_nasc = row.get('D')
-            raw_estadia = row.get('E')
-            raw_obs_estadia = row.get('F')
-            raw_pre_resgate = row.get('G')
-            raw_entrada = row.get('H')
-            raw_castracao = row.get('I')
-            raw_local_vet = row.get('J')
-            raw_historico = row.get('K')
-            raw_exposicao = row.get('L')
-            raw_observacoes = row.get('M')
-            raw_poli = row.get('N')
-            raw_reforco1 = row.get('O')
-            raw_reforco2 = row.get('P')
-            raw_raiva = row.get('Q')
-            raw_docs = row.get('R') if sheet_name == 'LISTA GERAL' else row.get('S')
-            raw_moura = row.get('S') if sheet_name == 'LISTA GERAL' else row.get('T')
-            raw_chip = row.get('T') if sheet_name == 'LISTA GERAL' else row.get('U')
-            raw_rga = row.get('U') if sheet_name == 'LISTA GERAL' else None
+            raw_sexo = row.get('D')
+            raw_nasc = row.get('E')
+            raw_estadia = row.get('F')
+            raw_obs_estadia = row.get('G')
+            raw_pre_resgate = row.get('H')
+            raw_resgatante = row.get('I')
+            raw_entrada = row.get('J')
+            raw_castracao = row.get('K')
+            raw_local_vet = row.get('L')
+            raw_historico = row.get('M')
+            raw_exposicao = row.get('N')
+            raw_observacoes = row.get('O')
+            raw_poli = row.get('P')
+            raw_reforco1 = row.get('Q')
+            raw_reforco2 = row.get('R')
+            raw_raiva = row.get('S')
 
-            # Campos específicos da aba de adotados
-            raw_adotante = row.get('W') if sheet_name == 'ADOTADOS' else None
-            raw_telefone = row.get('X') if sheet_name == 'ADOTADOS' else None
-            raw_email = row.get('Y') if sheet_name == 'ADOTADOS' else None
-            raw_tag = row.get('Z') if sheet_name == 'ADOTADOS' else None
+            # Tratamento de colunas pós-coluna S dependendo da aba
+            if sheet_name == 'LISTA GERAL':
+                raw_reforco_raiva = None
+                raw_docs = row.get('T_link') or (row.get('T') if str(row.get('T', '')).strip().startswith(('http://', 'https://')) else None)
+                raw_moura = row.get('U')
+                raw_chip = row.get('V')
+                raw_rga = row.get('W')
+                raw_adotante = None
+                raw_telefone = None
+                raw_email = None
+                raw_tag = None
+            elif sheet_name == 'ADOTADOS':
+                raw_reforco_raiva = row.get('T')
+                raw_docs = row.get('U_link') or (row.get('U') if str(row.get('U', '')).strip().startswith(('http://', 'https://')) else None)
+                raw_moura = row.get('V')
+                raw_chip = row.get('W')
+                raw_rga = row.get('X')
+                raw_adotante = row.get('Y')
+                raw_telefone = row.get('Z')
+                raw_email = row.get('AA')
+                raw_tag = row.get('AB')
+            else: # OBITOSDEVOL
+                raw_reforco_raiva = row.get('T')
+                raw_docs = row.get('U_link') or (row.get('U') if str(row.get('U', '')).strip().startswith(('http://', 'https://')) else None)
+                raw_moura = row.get('V')
+                raw_chip = row.get('W')
+                raw_rga = None
+                raw_adotante = row.get('X')
+                raw_telefone = row.get('Y')
+                raw_email = None
+                raw_tag = None
 
-            # Contexto textual para inferências
+            # Contexto textual para enriquecimento e inferências
             combined_context = f"{clean_name} {raw_observacoes or ''} {raw_historico or ''} {raw_pre_resgate or ''}"
 
             # 1. Transformação dos dados do Pet
@@ -119,7 +143,14 @@ class PeludinhosETLPipeline:
             if not data_castracao_iso and raw_castracao and any(w in raw_castracao.lower() for w in ['castrad', 'sim', 'ok']):
                 data_castracao_iso = data_nasc_iso or "2023-01-01"
 
-            sexo = self.transformer.infer_sexo(clean_name, combined_context)
+            # Sexo: normalizar se presente na coluna D, senão inferir
+            if raw_sexo and str(raw_sexo).strip().lower() in ('femea', 'fêmea'):
+                sexo = "Fêmea"
+            elif raw_sexo and str(raw_sexo).strip().lower() in ('macho',):
+                sexo = "Macho"
+            else:
+                sexo = self.transformer.infer_sexo(clean_name, combined_context)
+
             status = self.transformer.normalize_status(raw_status, sheet_name, combined_context)
             senioridade = self.transformer.calculate_senioridade(data_nasc_iso)
             raca = self.transformer.infer_raca(combined_context)
@@ -133,6 +164,14 @@ class PeludinhosETLPipeline:
             moura_cleaned = self.transformer.clean_identifier(raw_moura)
             rga_cleaned = self.transformer.clean_identifier(raw_rga)
 
+            obs_pet_parts = []
+            if raw_observacoes:
+                obs_pet_parts.append(f"Obs: {raw_observacoes}")
+            if raw_historico:
+                obs_pet_parts.append(f"Hist: {raw_historico}")
+            if raw_exposicao and raw_exposicao.strip() not in ('-', 'N/A', ''):
+                obs_pet_parts.append(f"Exp: {raw_exposicao}")
+
             pet = PetRecord(
                 nome=final_name,
                 tipo_pet="Cachorro",
@@ -143,25 +182,37 @@ class PeludinhosETLPipeline:
                 porte=porte,
                 data_nascimento=data_nasc_iso,
                 data_castracao=data_castracao_iso,
-                link_documentos=raw_docs[:255] if raw_docs else None,
+                link_documentos=raw_docs.strip() if raw_docs else None,
                 cor_majoritaria=None,
                 moura=moura_cleaned[:30] if moura_cleaned else None,
                 chip=chip_cleaned[:30] if chip_cleaned else None,
                 rga=rga_cleaned[:30] if rga_cleaned else None,
                 original_sheet=sheet_name,
                 original_row=r_num,
-                observacoes_gerais=f"Obs: {raw_observacoes or ''} | Hist: {raw_historico or ''}".strip(" |")
+                observacoes_gerais=" | ".join(obs_pet_parts) if obs_pet_parts else None
             )
             self.pets.append(pet)
 
             # 2. Transformação do Registro de Entrada
             data_entrada_iso = self.transformer.parse_date(raw_entrada) or data_nasc_iso or "2023-01-01"
-            resgatante_str = (raw_pre_resgate or "Peludinhos Caninos")[:50].strip()
-            origem_str = (raw_historico or raw_pre_resgate or "Resgate / Acolhimento")[:50].strip()
+            
+            # Resgatante: coluna explícita 'I' com fallback seguro
+            resgatante_str = (raw_resgatante or "Peludinhos Caninos").strip()[:50]
+            if not resgatante_str:
+                resgatante_str = "Peludinhos Caninos"
+
+            # Local de Origem: coluna 'H' (Pré resgate), histórico ou padrão
+            origem_str = (raw_pre_resgate or raw_historico or "Resgate / Acolhimento").strip()[:50]
+            if not origem_str:
+                origem_str = "Resgate / Acolhimento"
             
             obs_entrada_parts = []
             if raw_observacoes:
                 obs_entrada_parts.append(f"Obs: {raw_observacoes}")
+            if raw_historico and raw_historico != raw_pre_resgate:
+                obs_entrada_parts.append(f"Hist: {raw_historico}")
+            if raw_exposicao and raw_exposicao.strip() not in ('-', 'N/A', ''):
+                obs_entrada_parts.append(f"Exp: {raw_exposicao}")
             if raw_adotante:
                 obs_entrada_parts.append(f"Adotante: {raw_adotante} (Tel: {raw_telefone or 'N/A'}, Email: {raw_email or 'N/A'})")
             if raw_tag:
@@ -210,14 +261,16 @@ class PeludinhosETLPipeline:
                     veterinario_ref=None
                 ))
 
-
             # Vacinas registradas nas colunas da linha
             vacina_cols = [
-                ("V10 (Déctupla Canina)", raw_poli),
-                ("V10 (Déctupla Canina)", raw_reforco1),
-                ("V10 (Déctupla Canina)", raw_reforco2),
+                ("DHPPI (Polivalente Canina)", raw_poli),
+                ("DHPPI (Polivalente Canina)", raw_reforco1),
+                ("DHPPI (Polivalente Canina)", raw_reforco2),
                 ("Antirrábica (Raiva)", raw_raiva)
             ]
+            if raw_reforco_raiva:
+                vacina_cols.append(("Antirrábica (Raiva)", raw_reforco_raiva))
+
             for vac_nome, raw_vac_val in vacina_cols:
                 if raw_vac_val:
                     data_vac_iso = self.transformer.parse_date(raw_vac_val)
@@ -247,10 +300,10 @@ class PeludinhosETLPipeline:
             clean_name = nome_pet.strip()[:30]
 
             v_cols = [
-                ("V10 (Déctupla Canina)", row.get('C')),
-                ("V10 (Déctupla Canina)", row.get('D')),
-                ("V10 (Déctupla Canina)", row.get('E')),
-                ("V10 (Déctupla Canina)", row.get('F')),
+                ("DHPPI (Polivalente Canina)", row.get('C')),
+                ("DHPPI (Polivalente Canina)", row.get('D')),
+                ("DHPPI (Polivalente Canina)", row.get('E')),
+                ("DHPPI (Polivalente Canina)", row.get('F')),
                 ("Antirrábica (Raiva)", row.get('G'))
             ]
             for v_name, val in v_cols:
@@ -279,14 +332,21 @@ class PeludinhosETLPipeline:
             clean_name = nome_pet.strip()[:30]
 
             # Iterar pelas colunas de anos/vacinas
+            poli_cols = {'C', 'E', 'F', 'G', 'J', 'K', 'L', 'N', 'O', 'P'}
+            raiva_cols = {'D', 'H', 'M', 'Q'}
             for col_letter, val in row.items():
                 if col_letter in ('A', 'B') or not val:
                     continue
                 dt_iso = self.transformer.parse_date(val)
                 if dt_iso:
-                    v_name = "V10 (Déctupla Canina)" if col_letter in ('C', 'E', 'G', 'J', 'L', 'N', 'P') else "Antirrábica (Raiva)"
-                    if col_letter == 'I':
+                    if col_letter in poli_cols:
+                        v_name = "DHPPI (Polivalente Canina)"
+                    elif col_letter in raiva_cols:
+                        v_name = "Antirrábica (Raiva)"
+                    elif col_letter == 'I':
                         v_name = "Gripe Canina (Tosse dos Canis)"
+                    else:
+                        v_name = "DHPPI (Polivalente Canina)"
                     self.vacinas.append(VacinaRecord(
                         pet_ref=clean_name,
                         nome_vacina=v_name,
