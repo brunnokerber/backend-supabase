@@ -34,12 +34,30 @@ O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e 
     - Cadastro de voluntários da organização (nome, e-mail, telefone, dias da semana, turnos e observações). RLS restrito a administradores.
 13. **`indexes_and_search`** (`20261008000012_create_indexes_and_search.sql`):
     - Extensão `pg_trgm`, índices em todas as Foreign Keys (FKs), ordenação de prontuários e índices GIN para busca textual de alta performance.
+14. **`adotar_pet`** (`20261014000013_create_adotar_pet_rpc.sql`):
+    - Stored procedure transacional atômica para o fluxo de adoção de pets: validação de status `Disponível` (com lock pessimista `FOR UPDATE`), atualização de status para `Adotado`, inserção no histórico de estadias (`pets_locais`) e retorno estruturado com tratamento de exceções amigáveis.
 
 ---
 
 ## Stored Procedures (RPCs)
 - **`create_pet_com_entrada(p_pet_data, p_entrada_data)`**: Criação atômica de Pet (incluindo `foto_url`, identificadores e documentos) e registro de Entrada em uma única transação (`SECURITY DEFINER`).
 - **`update_pet_com_entrada(p_pet_id, p_pet_data, p_entrada_data)`**: Atualização conjunta de dados cadastrais do animal (incluindo `foto_url`) e de entrada com consistência transacional.
+- **`adotar_pet(p_pet_id, p_pet_local_data)`**: Processamento atômico e transacional do fluxo de adoção de um animal.
+  - **Segurança:** Acesso restrito a usuários ativos e autenticados (`public.is_active_user()`).
+  - **Regra de Negócio:** Permite a adoção exclusivamente de pets com status `'Disponível'`. Caso o pet esteja com qualquer outro status (ex: `'Adotado'`, `'Em Tratamento'`, `'Quarentena'`, `'Óbito'`), aborta a transação com uma mensagem de erro amigável contextualizada.
+  - **Atomicidade e Concorrência:** Utiliza lock pessimista (`FOR UPDATE`) para evitar condições de corrida. Altera o status do animal para `'Adotado'` e insere imediatamente o registro em `public.pets_locais` com o local de destino, data de saída, motivo (default `'Adoção'`), observações e valor de auxílio.
+  - **Exemplo de Chamada no Frontend / Angular:**
+    ```typescript
+    const { data, error } = await supabase.rpc('adotar_pet', {
+      p_pet_id: 12,
+      p_pet_local_data: {
+        id_local: 3,
+        data_saida: '2026-10-14',
+        motivo_saida: 'Adoção Definitiva',
+        obs: 'Adotado com termo de responsabilidade assinado'
+      }
+    });
+    ```
 
 ---
 
@@ -115,6 +133,9 @@ Authorization: Bearer <ACCESS_TOKEN_DO_USUARIO>
 - `GET /rest/v1/pets?select=*,entradas(*),vacinas(*),consultas_exames(*)`
 - `GET /rest/v1/locais?select=*,pets_locais(*,pets(*))`
 - `GET /rest/v1/doacoes?select=*,direcionamento_doacoes(*,locais(*))`
+- `POST /rest/v1/rpc/adotar_pet` (Adoção atômica com validação de status)
+- `POST /rest/v1/rpc/create_pet_com_entrada` (Cadastro atômico de Pet e Entrada)
+- `POST /rest/v1/rpc/update_pet_com_entrada` (Edição atômica de Pet e Entrada)
 
 ---
 
