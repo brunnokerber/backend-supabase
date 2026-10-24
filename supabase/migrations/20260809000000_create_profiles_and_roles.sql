@@ -43,10 +43,13 @@ stable
 set search_path = public
 as $$
   select
-    -- Execuções diretas no banco (SQL Editor do Dashboard, migrations, psql)
-    current_user in ('postgres', 'supabase_admin', 'service_role')
     -- Requisições autenticadas com service_role key (Edge Functions / Backend)
-    or (auth.role() = 'service_role')
+    (auth.role() = 'service_role')
+    -- Execuções diretas no banco (SQL Editor do Dashboard, migrations, psql) sem contexto de requisição HTTP
+    or (
+      auth.role() is null
+      and session_user in ('postgres', 'supabase_admin')
+    )
     -- Usuário autenticado na aplicação com perfil admin ativo
     or (
       auth.uid() is not null
@@ -70,8 +73,12 @@ set search_path = public
 as $$
   select
     -- Permite acessos de sistema e service_role
-    current_user in ('postgres', 'supabase_admin', 'service_role')
-    or (auth.role() = 'service_role')
+    (auth.role() = 'service_role')
+    -- Execuções diretas no banco (SQL Editor do Dashboard, migrations, psql) sem contexto de requisição HTTP
+    or (
+      auth.role() is null
+      and session_user in ('postgres', 'supabase_admin')
+    )
     -- Usuário autenticado deve possuir perfil com ativo = true e sem deleted_at
     or (
       auth.uid() is not null

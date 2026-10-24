@@ -36,6 +36,8 @@ O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e 
     - Extensão `pg_trgm`, índices em todas as Foreign Keys (FKs), ordenação de prontuários e índices GIN para busca textual de alta performance.
 14. **`adotar_pet`** (`20261014000013_create_adotar_pet_rpc.sql`):
     - Stored procedure transacional atômica para o fluxo de adoção de pets: validação de status `Disponível` (com lock pessimista `FOR UPDATE`), atualização de status para `Adotado`, inserção no histórico de estadias (`pets_locais`) e retorno estruturado com tratamento de exceções amigáveis.
+15. **`doacoes_monetarias`** (`20261024000014_create_doacoes_monetarias.sql`):
+    - Gestão de doações financeiras e monetárias recebidas (valor com check > 0, doador, telefone, data da doação e observações). RLS ativo com inserção/leitura/atualização para usuários autenticados e ativos (`is_active_user()`), e política de exclusão estritamente restrita a administradores (`is_admin()`). Inclui índice por data e índice GIN com `pg_trgm` para busca textual de doadores.
 
 ---
 
@@ -133,6 +135,8 @@ Authorization: Bearer <ACCESS_TOKEN_DO_USUARIO>
 - `GET /rest/v1/pets?select=*,entradas(*),vacinas(*),consultas_exames(*)`
 - `GET /rest/v1/locais?select=*,pets_locais(*,pets(*))`
 - `GET /rest/v1/doacoes?select=*,direcionamento_doacoes(*,locais(*))`
+- `GET /rest/v1/doacoes_monetarias?order=data_doacao.desc`
+- `POST /rest/v1/doacoes_monetarias`
 - `POST /rest/v1/rpc/adotar_pet` (Adoção atômica com validação de status)
 - `POST /rest/v1/rpc/create_pet_com_entrada` (Cadastro atômico de Pet e Entrada)
 - `POST /rest/v1/rpc/update_pet_com_entrada` (Edição atômica de Pet e Entrada)

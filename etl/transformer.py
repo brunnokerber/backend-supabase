@@ -54,6 +54,245 @@ RACAS_COMUNS = [
     ('srd', 'SRD')
 ]
 
+# Mapeamento de equivalências (aliases) para a chave canônica
+CANONICAL_LOCAIS_ALIASES: Dict[str, str] = {
+    "fucus": "fuçus lindus",
+    "fuçus lindus": "fuçus lindus",
+    "fuus lindus": "fuçus lindus",
+    "casa joyce": "joyce",
+    "joice": "joyce",
+    "joyce": "joyce",
+    "casa joana": "joana",
+    "joana": "joana",
+    "fatima": "fatima ferreira",
+    "fatima ferreira": "fatima ferreira",
+    "casa carol": "carol",
+}
+
+# Dados enriquecidos dos principais parceiros e lares conhecidos
+CANONICAL_LOCAIS_DATA: Dict[str, Dict[str, Any]] = {
+    "sitio da port": {
+        "local": "Sítio da Port",
+        "tipo_local": "Abrigo",
+        "contato": "Port (Responsável)",
+        "cidade": "Portão",
+        "estado": "RS",
+        "cep": "93180000",
+        "bairro": "Zona Rural",
+        "rua": "Estrada da Port",
+        "numero": 0,
+    },
+    "cempra": {
+        "local": "CEMPRA - Proteção Animal",
+        "tipo_local": "Clínica Veterinária",
+        "contato": "Equipe Veterinária CEMPRA",
+        "cidade": "Sapiranga",
+        "estado": "RS",
+        "cep": "93800000",
+        "bairro": "Centro",
+        "rua": "Avenida 20 de Setembro",
+        "numero": 0,
+    },
+    "bicho livre": {
+        "local": "Clínica Veterinária Bicho Livre",
+        "tipo_local": "Clínica Veterinária",
+        "contato": "Equipe Bicho Livre",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "tierplatz": {
+        "local": "Associação Tierplatz",
+        "tipo_local": "Abrigo",
+        "contato": "Equipe Tierplatz",
+        "cidade": "Taquara",
+        "estado": "RS",
+        "cep": "95600000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "petz": {
+        "local": "Espaço Petz de Adoção",
+        "tipo_local": "Exposição",
+        "contato": "Gerência Petz",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Centro",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "sao paulo": {
+        "local": "Acolhimento São Paulo",
+        "tipo_local": "Lar Temporário",
+        "contato": "Parceiro Acolhedor SP",
+        "cidade": "São Paulo",
+        "estado": "SP",
+        "cep": "01001000",
+        "bairro": "Centro",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "bruno tutor": {
+        "local": "Tutor Bruno",
+        "tipo_local": "Lar Temporário",
+        "contato": "Bruno (Tutor)",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "joyce": {
+        "local": "Lar Temporário Joyce",
+        "tipo_local": "Lar Temporário",
+        "contato": "Joyce",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Santo Afonso",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "aline pet papa": {
+        "local": "Lar Temporário Aline (Pet Papa)",
+        "tipo_local": "Lar Temporário",
+        "contato": "Aline",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "fuçus lindus": {
+        "local": "Lar Temporário Fuçus Lindus",
+        "tipo_local": "Lar Temporário",
+        "contato": "Responsável Fuçus Lindus",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "fatima ferreira": {
+        "local": "Lar Temporário Fátima Ferreira",
+        "tipo_local": "Lar Temporário",
+        "contato": "Fátima Ferreira",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "joana": {
+        "local": "Lar Temporário Joana",
+        "tipo_local": "Lar Temporário",
+        "contato": "Joana",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "carol": {
+        "local": "Lar Temporário Carol",
+        "tipo_local": "Lar Temporário",
+        "contato": "Carol",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "habitat": {
+        "local": "Lar Temporário Habitat",
+        "tipo_local": "Lar Temporário",
+        "contato": "Responsável Habitat",
+        "cidade": "Sapiranga",
+        "estado": "RS",
+        "cep": "93800000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "fernanda": {
+        "local": "Lar Temporário Fernanda",
+        "tipo_local": "Lar Temporário",
+        "contato": "Fernanda",
+        "cidade": "Sapiranga",
+        "estado": "RS",
+        "cep": "93800000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "solange": {
+        "local": "Lar Temporário Solange",
+        "tipo_local": "Lar Temporário",
+        "contato": "Solange",
+        "cidade": "Sapiranga",
+        "estado": "RS",
+        "cep": "93800000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "lara": {
+        "local": "Lar Temporário Lara",
+        "tipo_local": "Lar Temporário",
+        "contato": "Lara",
+        "cidade": "Sapiranga",
+        "estado": "RS",
+        "cep": "93800000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "kamille": {
+        "local": "Lar Temporário Kamille",
+        "tipo_local": "Lar Temporário",
+        "contato": "Kamille",
+        "cidade": "Sapiranga",
+        "estado": "RS",
+        "cep": "93800000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "santa": {
+        "local": "Lar Temporário Santa",
+        "tipo_local": "Lar Temporário",
+        "contato": "Santa",
+        "cidade": "Sapiranga",
+        "estado": "RS",
+        "cep": "93800000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+    "amiga sil": {
+        "local": "Lar Temporário Amiga Sil",
+        "tipo_local": "Lar Temporário",
+        "contato": "Silvia / Amiga Sil",
+        "cidade": "Novo Hamburgo",
+        "estado": "RS",
+        "cep": "93300000",
+        "bairro": "Não Informado",
+        "rua": "Não Informada",
+        "numero": 0,
+    },
+}
+
 class PetTransformer:
     @staticmethod
     def parse_date(value: Optional[str]) -> Optional[str]:
@@ -218,22 +457,56 @@ class PetTransformer:
         return "DHPPI (Polivalente Canina)"
 
     @staticmethod
-    def normalize_tipo_local(nome_local: str) -> str:
+    def resolve_local(raw_name: Optional[str]) -> Tuple[Optional[str], Optional[LocalRecord]]:
         """
-        Mapeia o local para as opções válidas no Frontend (TIPO_LOCAL_OPTIONS):
-        'Lar Temporário', 'Clínica Veterinária', 'Exposição', 'Abrigo', 'CCZ', 'Outro'.
+        Normaliza, deduplica e enriquece semanticamente a estadia da planilha legada,
+        retornando uma tupla (nome_canonico, LocalRecord) ou (None, None) se for anomalia/inválido.
         """
-        lower = nome_local.lower()
-        if any(w in lower for w in ['vet', 'clinica', 'clínica', 'hospital', 'espaço animal', 'cempra']):
-            return "Clínica Veterinária"
-        if any(w in lower for w in ['petz', 'feira', 'evento', 'exposi', 'shopping']):
-            return "Exposição"
-        if any(w in lower for w in ['abrigo', 'canil', 'tierplatz']):
-            return "Abrigo"
-        if "ccz" in lower or "zoonose" in lower:
-            return "CCZ"
+        if not raw_name:
+            return None, None
         
-        return "Lar Temporário"
+        cleaned = str(raw_name).strip()
+        if not cleaned or cleaned in ("?", "-", "N/A", "n/a", "--"):
+            return None, None
+        
+        key = cleaned.lower()
+        canonical_key = CANONICAL_LOCAIS_ALIASES.get(key, key)
+        
+        if canonical_key in CANONICAL_LOCAIS_DATA:
+            data = CANONICAL_LOCAIS_DATA[canonical_key]
+            record = LocalRecord(
+                local=data["local"],
+                tipo_local=data["tipo_local"],
+                contato=data["contato"],
+                telefone="00000000000",
+                cidade=data["cidade"],
+                estado=data["estado"],
+                cep=data["cep"],
+                bairro=data["bairro"],
+                rua=data["rua"],
+                numero=data["numero"]
+            )
+            return record.local, record
+        
+        # Para lares pessoais de voluntários
+        if not cleaned.lower().startswith("lar temporário"):
+            display_local = f"Lar Temporário {cleaned}"
+        else:
+            display_local = cleaned
+            
+        record = LocalRecord(
+            local=display_local[:50],
+            tipo_local="Lar Temporário",
+            contato=cleaned[:50],
+            telefone="00000000000",
+            cidade="Novo Hamburgo",
+            estado="RS",
+            cep="93300000",
+            bairro="Não Informado",
+            rua="Não Informada",
+            numero=0
+        )
+        return record.local, record
 
     @staticmethod
     def infer_raca(text: str) -> str:

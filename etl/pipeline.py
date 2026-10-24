@@ -230,24 +230,20 @@ class PeludinhosETLPipeline:
 
             # 3. Transformação de Locais e Pets_Locais (Hospedagem)
             if raw_estadia and raw_estadia.strip():
-                nome_local = raw_estadia.strip()[:50]
-                tipo_loc = self.transformer.normalize_tipo_local(nome_local)
-                if nome_local not in self.locais:
-                    self.locais[nome_local] = LocalRecord(
-                        local=nome_local,
-                        tipo_local=tipo_loc,
-                        contato=nome_local
+                nome_can, loc_rec = self.transformer.resolve_local(raw_estadia)
+                if loc_rec is not None:
+                    if nome_can not in self.locais:
+                        self.locais[nome_can] = loc_rec
+                    
+                    valor_aux = self.transformer.parse_currency(raw_obs_estadia)
+                    pet_local = PetLocalRecord(
+                        pet_ref=final_name,
+                        local_nome=nome_can,
+                        data_saida=data_entrada_iso,
+                        valor_auxilio=valor_aux,
+                        obs=raw_observacoes[:200] if raw_observacoes else None
                     )
-                
-                valor_aux = self.transformer.parse_currency(raw_obs_estadia)
-                pet_local = PetLocalRecord(
-                    pet_ref=final_name,
-                    local_nome=nome_local,
-                    data_saida=data_entrada_iso,
-                    valor_auxilio=valor_aux,
-                    obs=raw_observacoes[:200] if raw_observacoes else None
-                )
-                self.pets_locais.append(pet_local)
+                    self.pets_locais.append(pet_local)
 
             # 4. Consultas/Exames e Vacinas
 

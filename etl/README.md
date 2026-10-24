@@ -54,7 +54,19 @@ O pipeline garante a integridade de todas as colunas `NOT NULL` e respeita os en
    - `rga`: Coluna **`W`** (`LISTA GERAL`) ou **`X`** (`ADOTADOS`).
    - Remoção de notação científica flutuante do Excel (ex: `9.63E14` -> microchip de 15 dígitos).
 10. **`vacinas`**: Padronizadas conforme `VACINAS_SUGESTOES` (`'DHPPI (Polivalente Canina)'`, `'Antirrábica (Raiva)'`, `'Gripe Canina (Tosse dos Canis)'`, `'V10 (Déctupla Canina)'`, etc.). Cobre doses iniciais e reforços das colunas **`P`**, **`Q`**, **`R`**, **`S`** e **`T`** (reforço de raiva), além das matrizes anuais das abas de filhotes e adultos.
-11. **`locais` e Hospedagem (`pets_locais`)**: Mapeados a partir da coluna **`F` (Estadia)** e valor de auxílio na coluna **`G` (Obs)** conforme `TIPO_LOCAL_OPTIONS` (`'Lar Temporário'`, `'Clínica Veterinária'`, `'Exposição'`, `'Abrigo'`).
+11. **`locais` e Hospedagem (`pets_locais`)**: Mapeados a partir da coluna **`F` (Estadia)** e valor de auxílio na coluna **`G` (Obs)** com normalização canônica e enriquecimento semântico:
+    - **Deduplicação de Grafias:** Unificação de variações da planilha (`Fuçus Lindus` / `Fucus`, `Casa Joyce` / `Joice` / `Joyce`, `Casa Joana` / `Joana`, `Fatima` / `Fatima Ferreira`, `Casa Carol` / `Carol`).
+    - **Remoção de Ruído:** Estadias com valor `?` ou traço são ignoradas (evitando cadastros lixo no banco).
+    - **Enriquecimento dos Principais Parceiros:** Mapeamento preciso de tipos e contatos para parceiros conhecidos:
+      - `Sítio da Port`: Tipo `'Abrigo'`, Cidade: `'Portão - RS'`, Bairro: `'Zona Rural'`, Contato: `'Port (Responsável)'`.
+      - `CEMPRA - Proteção Animal`: Tipo `'Clínica Veterinária'`, Cidade: `'Sapiranga - RS'`, Bairro: `'Centro'`, Contato: `'Equipe Veterinária CEMPRA'`.
+      - `Clínica Veterinária Bicho Livre`: Tipo `'Clínica Veterinária'`, Cidade: `'Novo Hamburgo - RS'`.
+      - `Espaço Petz de Adoção`: Tipo `'Exposição'`, Cidade: `'Novo Hamburgo - RS'`, Bairro: `'Centro'`.
+      - `Associação Tierplatz`: Tipo `'Abrigo'`, Cidade: `'Taquara - RS'`.
+      - `Acolhimento São Paulo`: Tipo `'Lar Temporário'`, Cidade: `'São Paulo - SP'`.
+      - `Lar Temporário Joyce`: Bairro: `'Santo Afonso'`.
+      - Lares de Sapiranga com cidade correta (`Fernanda`, `Habitat`, `Kamille`, `Lara`, `Santa`, `Solange`).
+    - **Contatos Semânticos e Endereço Explícito:** O campo `contato` recebe o nome da pessoa responsável (não mais a cópia do nome do local). Endereços desconhecidos usam claramente `rua: "Não Informada"`, `numero: 0`, `bairro: "Não Informado"` para evidenciar pendência cadastral.
 12. **`consultas_exames`**: Registro automático dos procedimentos cirúrgicos de castração a partir da coluna **`K` (Castração)** com `TIPO_OPERACAO_OPTIONS` (`'Procedimento Cirúrgico'`).
 
 ---
@@ -94,4 +106,4 @@ python -m etl.main --export-json
 Para garantir total isolamento e evitar conflitos de autenticação:
 
 - **`supabase/seed.sql`**: Contém **apenas** a criação do usuário administrador (`admin@admin.com` / `Admin@123`) e configuração inicial do `auth.users`, `auth.identities` e `public.profiles`. Executado nativamente pelo comando `supabase db reset`.
-- **`etl/data/output/seed_peludinhos_etl.sql`**: Contém **exclusivamente** os dados da carga legada dos pets (347 pets, 347 entradas, 44 locais, 330 estadias/pets_locais, 538 doses de vacinas e 289 procedimentos cirúrgicos). Aplicado via `python -m etl.main --load-db` ou pelo SQL Editor do Studio.
+- **`etl/data/output/seed_peludinhos_etl.sql`**: Contém **exclusivamente** os dados da carga legada dos pets (347 pets, 347 entradas, 38 locais consolidados, 329 estadias/pets_locais, 538 doses de vacinas e 289 procedimentos cirúrgicos). Aplicado via `python -m etl.main --load-db` ou pelo SQL Editor do Studio.
