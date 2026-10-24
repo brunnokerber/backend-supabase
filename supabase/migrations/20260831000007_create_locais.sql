@@ -11,6 +11,7 @@ create table if not exists public.locais (
   cidade varchar(50) not null,
   estado varchar(2) not null,
   cep varchar(8) not null,
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

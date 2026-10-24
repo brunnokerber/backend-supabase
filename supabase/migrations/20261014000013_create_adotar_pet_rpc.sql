@@ -69,7 +69,8 @@ begin
     data_saida,
     data_reentrada,
     valor_auxilio,
-    obs
+    obs,
+    updated_by
   )
   values (
     v_local_id,
@@ -86,7 +87,8 @@ begin
       then (p_pet_local_data->>'valor_auxilio')::decimal(10,2) 
       else null 
     end,
-    (p_pet_local_data->>'obs')::varchar(200)
+    (p_pet_local_data->>'obs')::varchar(200),
+    auth.uid()
   )
   returning id into v_pet_local_id;
 

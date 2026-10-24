@@ -14,6 +14,19 @@ create index if not exists idx_pets_locais_id_local on public.pets_locais(id_loc
 create index if not exists idx_direcionamento_doacoes_id_doacao on public.direcionamento_doacoes(id_doacao);
 create index if not exists idx_direcionamento_doacoes_id_local on public.direcionamento_doacoes(id_local);
 
+-- Índices de auditoria (updated_by) para acelerar rastreamento e JOINs com public.profiles
+create index if not exists idx_profiles_updated_by on public.profiles(updated_by);
+create index if not exists idx_pets_updated_by on public.pets(updated_by);
+create index if not exists idx_entradas_updated_by on public.entradas(updated_by);
+create index if not exists idx_veterinarios_updated_by on public.veterinarios(updated_by);
+create index if not exists idx_vacinas_updated_by on public.vacinas(updated_by);
+create index if not exists idx_consultas_exames_updated_by on public.consultas_exames(updated_by);
+create index if not exists idx_locais_updated_by on public.locais(updated_by);
+create index if not exists idx_doacoes_updated_by on public.doacoes(updated_by);
+create index if not exists idx_direcionamento_doacoes_updated_by on public.direcionamento_doacoes(updated_by);
+create index if not exists idx_pets_locais_updated_by on public.pets_locais(updated_by);
+create index if not exists idx_voluntarios_updated_by on public.voluntarios(updated_by);
+
 -- 3. Índices Compostos para Ordenação de Prontuário Clínico e Estadias (por Pet)
 create index if not exists idx_vacinas_pet_data on public.vacinas(id_pet, data_aplicacao desc nulls last);
 create index if not exists idx_consultas_pet_data on public.consultas_exames(id_pet, data_realizacao desc nulls last);
@@ -37,6 +50,7 @@ create index if not exists idx_locais_nome_trgm on public.locais using gin (loca
 create index if not exists idx_locais_bairro_trgm on public.locais using gin (bairro extensions.gin_trgm_ops);
 create index if not exists idx_locais_cidade_trgm on public.locais using gin (cidade extensions.gin_trgm_ops);
 create index if not exists idx_veterinarios_nome_trgm on public.veterinarios using gin (nome extensions.gin_trgm_ops);
+create index if not exists idx_doacoes_tipo_doacao_trgm on public.doacoes using gin (tipo_doacao extensions.gin_trgm_ops);
 create index if not exists idx_profiles_created_at_desc on public.profiles(created_at desc);
 
 -- 7. Índices para Módulo de Voluntários (/voluntarios)

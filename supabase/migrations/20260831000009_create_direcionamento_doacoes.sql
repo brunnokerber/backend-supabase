@@ -3,13 +3,14 @@ create table if not exists public.direcionamento_doacoes (
   id_local bigint not null references public.locais(id) on delete cascade,
   id_doacao bigint not null references public.doacoes(id) on delete cascade,
   volume decimal(10,2) not null,
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
 alter table public.direcionamento_doacoes enable row level security;
 
-grant select, insert, update on table public.direcionamento_doacoes to authenticated;
+grant select, insert, update, delete on table public.direcionamento_doacoes to authenticated;
 
 drop policy if exists "Authenticated users can read direcionamento_doacoes" on public.direcionamento_doacoes;
 create policy "Authenticated users can read direcionamento_doacoes"
@@ -31,6 +32,13 @@ create policy "Authenticated users can update direcionamento_doacoes"
   for update
   to authenticated
   using (public.is_active_user());
+
+drop policy if exists "Admins can delete direcionamento_doacoes" on public.direcionamento_doacoes;
+create policy "Admins can delete direcionamento_doacoes"
+  on public.direcionamento_doacoes
+  for delete
+  to authenticated
+  using (public.is_admin());
 
 drop trigger if exists set_direcionamento_doacoes_updated_at on public.direcionamento_doacoes;
 create trigger set_direcionamento_doacoes_updated_at

@@ -7,6 +7,7 @@ create table if not exists pets_locais(
   data_saida date not null,
   valor_auxilio decimal(10,2),
   obs varchar(200),
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

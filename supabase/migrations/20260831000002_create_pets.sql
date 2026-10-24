@@ -15,6 +15,7 @@ create table if not exists public.pets (
   moura varchar(30),
   chip varchar(30),
   rga varchar(30),
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

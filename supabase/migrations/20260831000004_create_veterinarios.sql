@@ -3,6 +3,7 @@ create table if not exists public.veterinarios (
   nome varchar(30) not null,
   telefone varchar(11) not null,
   crmv varchar(30) not null,
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

@@ -6,6 +6,7 @@ create table if not exists vacinas(
   data_prevista date not null,
   data_aplicacao date,
   custo numeric(10,2),
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

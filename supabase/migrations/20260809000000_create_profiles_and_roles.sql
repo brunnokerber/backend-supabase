@@ -13,6 +13,7 @@ create table if not exists public.profiles (
   role public.app_role not null default 'user',
   ativo boolean not null default true,
   deleted_at timestamptz default null,
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -24,6 +25,7 @@ language plpgsql
 as $$
 begin
   new.updated_at = timezone('utc', now());
+  new.updated_by = coalesce(auth.uid(), new.updated_by, old.updated_by);
   return new;
 end;
 $$;

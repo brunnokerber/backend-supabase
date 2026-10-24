@@ -5,6 +5,7 @@ create table if not exists public.doacoes_monetarias (
   telefone varchar(11),
   data_doacao date not null default current_date,
   observacoes varchar(255),
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -55,3 +56,6 @@ create index if not exists idx_doacoes_monetarias_doador
 
 create index if not exists idx_doacoes_monetarias_doador_trgm
   on public.doacoes_monetarias using gin (doador extensions.gin_trgm_ops);
+
+create index if not exists idx_doacoes_monetarias_updated_by
+  on public.doacoes_monetarias(updated_by);

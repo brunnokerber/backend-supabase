@@ -6,6 +6,7 @@ create table if not exists entradas(
   data_entrada date not null,
   resgatante varchar(50) not null,
   observacoes text,
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -138,7 +139,8 @@ begin
     foto_url,
     moura,
     chip,
-    rga
+    rga,
+    updated_by
   )
   values (
     (p_pet_data->>'nome')::varchar(30),
@@ -155,7 +157,8 @@ begin
     (p_pet_data->>'foto_url')::text,
     (p_pet_data->>'moura')::varchar(30),
     (p_pet_data->>'chip')::varchar(30),
-    (p_pet_data->>'rga')::varchar(30)
+    (p_pet_data->>'rga')::varchar(30),
+    v_user_id
   )
   returning id into v_pet_id;
 
@@ -171,7 +174,8 @@ begin
       local_origem,
       data_entrada,
       resgatante,
-      observacoes
+      observacoes,
+      updated_by
     )
     values (
       v_user_id,
@@ -179,7 +183,8 @@ begin
       coalesce((p_entrada_data->>'local_origem')::varchar(50), 'Não informado'),
       coalesce((p_entrada_data->>'data_entrada')::date, current_date),
       coalesce((p_entrada_data->>'resgatante')::varchar(50), 'Não informado'),
-      (p_entrada_data->>'observacoes')::text
+      (p_entrada_data->>'observacoes')::text,
+      v_user_id
     )
     returning id into v_entrada_id;
   end if;

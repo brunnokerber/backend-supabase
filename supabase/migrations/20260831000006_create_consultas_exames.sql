@@ -6,6 +6,7 @@ create table if not exists consultas_exames(
   data_realizacao date not null,
   custo numeric(10,2),
   tipo_operacao varchar(30) not null,
+  updated_by uuid references public.profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

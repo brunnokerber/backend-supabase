@@ -11,33 +11,45 @@ O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e 
 1. **`profiles`** (`20260809000000_create_profiles_and_roles.sql`):
    - Perfis de usuários vinculados ao `auth.users` via trigger automático, com controle de papéis (`app_role`: `'user'`, `'admin'`).
 2. **`handle_updated_at`** (`20260831000001_create_update_at_function.sql`):
-   - Função utilitária global para atualização automática do campo `updated_at` via triggers.
+   - Função utilitária global para atualização automática do campo `updated_at` (timestamp UTC) e preenchimento automático do campo `updated_by` com o usuário autenticado (`auth.uid()`) em operações de `UPDATE`.
 3. **`pets`** (`20260831000002_create_pets.sql`):
-   - Cadastro dos animais resgatados (status, nome, datas, porte, pelagem, chip, rga, link_documentos, foto_url), criação do bucket privado `pets` no Supabase Storage (limite de 256 KB, restrição MIME para imagens) e políticas de RLS para acesso autenticado.
+   - Cadastro dos animais resgatados (status, nome, datas, porte, pelagem, chip, rga, link_documentos, foto_url, `updated_by`), criação do bucket privado `pets` no Supabase Storage (limite de 256 KB, restrição MIME para imagens) e políticas de RLS para acesso autenticado.
 4. **`entradas`** (`20260831000003_create_entradas.sql`):
-   - Registro de entrada do pet na organização/abrigo, vinculado ao usuário responsável (`auth.users`) e ao animal. Contém as RPCs transacionais atômicas `create_pet_com_entrada` e `update_pet_com_entrada`.
+   - Registro de entrada do pet na organização/abrigo, vinculado ao usuário responsável (`auth.users`) e ao animal, com rastreamento `updated_by`. Contém as RPCs transacionais atômicas `create_pet_com_entrada` e `update_pet_com_entrada`.
 5. **`veterinarios`** (`20260831000004_create_veterinarios.sql`):
-   - Cadastro de médicos veterinários e clínicas parceiras (nome, telefone, CRMV).
+   - Cadastro de médicos veterinários e clínicas parceiras (nome, telefone, CRMV, `updated_by`).
 6. **`vacinas`** (`20260831000005_create_vacinas.sql`):
-   - Controle do calendário vacinal dos pets (prevista, aplicação, veterinário responsável).
+   - Controle do calendário vacinal dos pets (prevista, aplicação, veterinário responsável, `updated_by`).
 7. **`consultas_exames`** (`20260831000006_create_consultas_exames.sql`):
-   - Histórico clínico do pet (consultas, procedimentos cirúrgicos, exames, medicamentos, custos).
+   - Histórico clínico do pet (consultas, procedimentos cirúrgicos, exames, medicamentos, custos, `updated_by`).
 8. **`locais`** (`20260831000007_create_locais.sql`):
-   - Cadastro de lares temporários, abrigos e pontos de apoio (endereço, contato, responsável).
+   - Cadastro de lares temporários, abrigos e pontos de apoio (endereço, contato, responsável, `updated_by`).
 9. **`doacoes`** (`20260831000008_create_doacoes.sql`):
-   - Registro de doações recebidas (ração, medicamentos, insumos, volume e unidade de medida).
+   - Registro de doações de suprimentos e insumos arrecadados (tipo de doação ex: `'Ração'`, `'Medicamento'`, `'Material de Limpeza'`, volume, unidade de medida, doador, telefone, `updated_by`). RLS ativo com leitura, cadastro e atualização para usuários autenticados e exclusão restrita a administradores (`is_admin()`). Índices B-Tree em `tipo_doacao` e GIN (`pg_trgm`) em `20261008000012_create_indexes_and_search.sql`.
 10. **`direcionamento_doacoes`** (`20260831000009_create_direcionamento_doacoes.sql`):
-    - Controle de distribuição de doações para os locais/lares temporários.
+    - Controle de distribuição de doações para os locais/lares temporários com `updated_by`. RLS ativo com leitura, cadastro e edição para usuários autenticados, e permissão de exclusão (`DELETE`) restrita a administradores (`is_admin()`).
 11. **`pets_locais`** (`20260831000010_create_pets_locais.sql`):
-    - Histórico de hospedagem e permanência dos pets nos locais/lares temporários com controle de auxílio financeiro.
+    - Histórico de hospedagem e permanência dos pets nos locais/lares temporários com controle de auxílio financeiro e `updated_by`.
 12. **`voluntarios`** (`20261008000011_create_voluntarios.sql`):
-    - Cadastro de voluntários da organização (nome, e-mail, telefone, dias da semana, turnos e observações). RLS restrito a administradores.
+    - Cadastro de voluntários da organização (nome, e-mail, telefone, dias da semana, turnos, observações, `updated_by`). RLS restrito a administradores.
 13. **`indexes_and_search`** (`20261008000012_create_indexes_and_search.sql`):
-    - Extensão `pg_trgm`, índices em todas as Foreign Keys (FKs), ordenação de prontuários e índices GIN para busca textual de alta performance.
+    - Extensão `pg_trgm`, índices em todas as Foreign Keys (incluindo FKs de `updated_by`), ordenação de prontuários e índices GIN para busca textual de alta performance.
 14. **`adotar_pet`** (`20261014000013_create_adotar_pet_rpc.sql`):
     - Stored procedure transacional atômica para o fluxo de adoção de pets: validação de status `Disponível` (com lock pessimista `FOR UPDATE`), atualização de status para `Adotado`, inserção no histórico de estadias (`pets_locais`) e retorno estruturado com tratamento de exceções amigáveis.
 15. **`doacoes_monetarias`** (`20261024000014_create_doacoes_monetarias.sql`):
-    - Gestão de doações financeiras e monetárias recebidas (valor com check > 0, doador, telefone, data da doação e observações). RLS ativo com inserção/leitura/atualização para usuários autenticados e ativos (`is_active_user()`), e política de exclusão estritamente restrita a administradores (`is_admin()`). Inclui índice por data e índice GIN com `pg_trgm` para busca textual de doadores.
+    - Gestão de doações financeiras e monetárias recebidas (valor com check > 0, doador, telefone, data da doação, observações e `updated_by`). RLS ativo com inserção/leitura/atualização para usuários autenticados e ativos (`is_active_user()`), e política de exclusão estritamente restrita a administradores (`is_admin()`). Inclui índice por data, FK index de `updated_by` e índice GIN com `pg_trgm` para busca textual de doadores.
+
+### Rastreamento de Auditoria e Autoria de Mudanças (`updated_by`)
+
+Todas as tabelas de entidades do sistema possuem a coluna `updated_by uuid references public.profiles(id) on delete set null default auth.uid()`.
+- **Criação (`INSERT`):** Preenchida automaticamente pelo valor padrão `auth.uid()`, atribuindo a autoria do registro ao usuário logado no momento do cadastro.
+- **Edição (`UPDATE`):** A função de trigger `public.handle_updated_at()` atualiza automaticamente `NEW.updated_by = coalesce(auth.uid(), NEW.updated_by, OLD.updated_by)`, garantindo que qualquer alteração via frontend/API registre o autor do último edit, sem depender de envio manual no payload.
+- **Integração no PostgREST:** Como a chave estrangeira aponta para `public.profiles(id)`, o frontend Angular pode carregar o autor facilmente com joins do Supabase:
+  ```typescript
+  const { data } = await supabase
+    .from('pets')
+    .select('*, author:profiles!updated_by(id, email, role)');
+  ```
 
 ---
 
