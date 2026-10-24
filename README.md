@@ -38,6 +38,11 @@ O banco é versionado através de **migrations SQL** (`supabase/migrations/`) e 
     - Stored procedure transacional atômica para o fluxo de adoção de pets: validação de status `Disponível` (com lock pessimista `FOR UPDATE`), atualização de status para `Adotado`, inserção no histórico de estadias (`pets_locais`) e retorno estruturado com tratamento de exceções amigáveis.
 15. **`doacoes_monetarias`** (`20261024000014_create_doacoes_monetarias.sql`):
     - Gestão de doações financeiras e monetárias recebidas (valor com check > 0, doador, telefone, data da doação, observações e `updated_by`). RLS ativo com inserção/leitura/atualização para usuários autenticados e ativos (`is_active_user()`), e política de exclusão estritamente restrita a administradores (`is_admin()`). Inclui índice por data, FK index de `updated_by` e índice GIN com `pg_trgm` para busca textual de doadores.
+16. **`despesas` e `vw_fluxo_caixa`** (`20261024000015_create_despesas.sql`):
+    - **`public.despesas`**: Gestão de saídas e despesas institucionais/operacionais da ONG (descrição, categoria controlada por check constraint, valor > 0, data da despesa, favorecido, telefone, observações, vínculo opcional com `id_pet` e auditoria `updated_by`). RLS com inserção, leitura e atualização para usuários ativos (`is_active_user()`), e política de exclusão restrita a administradores (`is_admin()`). Índices B-Tree em data, categoria, FK `id_pet`, FK `updated_by` e GIN (`pg_trgm`) em favorecido.
+    - **`public.vw_fluxo_caixa`**: Visão relacional consolidada (`security_invoker = true`) que unifica todo o livro-caixa em formato padronizado para gráficos, KPIs e relatórios no frontend:
+      - Entradas: Doações Monetárias (`doacoes_monetarias`).
+      - Saídas: Despesas Gerais (`despesas`), Procedimentos Clínicos com custo (`consultas_exames`), Vacinas Aplicadas com custo (`vacinas`) e Auxílios de Custo de Hospedagem em Lares Temporários (`pets_locais` com `valor_auxilio > 0`).
 
 ### Rastreamento de Auditoria e Autoria de Mudanças (`updated_by`)
 
